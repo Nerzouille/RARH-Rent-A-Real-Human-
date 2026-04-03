@@ -150,11 +150,12 @@ Three judges evaluate three bounties in ~5 minutes each.
 
 **Setup:** Three browser tabs: HumanProof app, server logs, Hashscan. Pre-seeded: verified worker (World ID staging), registered AI agent script (World AgentKit), human client account.
 
-- **World ID Demo:** Registration → server log showing POST to World API v4 → nullifier stored → duplicate rejected
-- **AgentKit Demo:** Agent script runs → task appears in UI → console log showing AgentBook verification
-- **Hedera Demo:** Task creation → Hashscan TX ID 1 (escrow) → validation → Hashscan TX ID 2 (release)
+- **World ID Demo:** Registration → server log showing POST to World API v4 → nullifier stored → duplicate rejected with judge-friendly error.
+- **AgentKit Demo:** Agent script runs → task appears in UI → console log showing AgentBook verification + human owner World ID lookup.
+- **Hedera Demo:** Simulate Deposit → task creation → Hashscan TX ID 1 (escrow) with "Processing" UI → validation → Hashscan TX ID 2 (release).
+- **Reset Demo:** Call `/admin` reset route → system ready for next judge in <5s.
 
-*Requirements revealed: Staging environment support, agent CLI script, accessible server logs, Hashscan links in UI.*
+*Requirements revealed: Staging environment support, agent CLI script, accessible server logs, Hashscan links in UI, Simulate Deposit button, Admin Reset route.*
 
 ---
 
@@ -167,15 +168,18 @@ Three judges evaluate three bounties in ~5 minutes each.
 | Task creation UI (human client) | Sophie |
 | Task creation API (agent client) | Aria |
 | AgentKit authentication middleware | Aria, Demo |
+| AgentBook + human owner lookup | Aria, Demo |
 | Hedera escrow on task creation | Sophie, Aria, Demo |
 | Task browsing + worker profile view | Sophie |
 | Task claim with nullifier check | Kenji |
 | "Mark as Complete" button | Kenji |
 | Client validation UI | Sophie |
-| Agent validation callback | Aria |
+| Agent validation (polling/direct) | Aria, Demo |
 | Hedera payment release | Kenji, Aria, Sophie, Demo |
 | Reputation string update | Kenji |
-| Hashscan TX links in UI | Demo |
+| Hashscan TX links + Processing UI | Demo |
+| Simulate Deposit feature | Demo |
+| Admin Reset / Demo Loop Support | Demo |
 | Staging/simulator environment | Demo |
 
 ## Domain-Specific Requirements
@@ -342,7 +346,8 @@ All 4 use Claude Code as primary build accelerator.
 
 ### Hedera Escrow Architecture
 
-**Platform-funded escrow account (server-side only):** Platform operates a single Hedera account with private key server-side. Clients deposit HBAR to platform account (manual for MVP). All Hedera transactions signed server-side by platform key — no wallet connect, no client-side signing.
+**Platform-funded escrow account (server-side only):** Platform operates a single Hedera account with private key server-side. 
+**Demo-Proof Deposit:** While real HBAR deposits are manual for MVP, the UI includes a "Simulate Deposit" button (visible in staging/demo) that triggers a real HBAR transfer + DB update instantly to ensure the demo flow never stalls. All Hedera transactions signed server-side by platform key — no wallet connect, no client-side signing.
 
 ### MVP Feature Priorities
 
@@ -359,6 +364,7 @@ All 4 use Claude Code as primary build accelerator.
 | "Mark as Complete" button | Core flow | P1 |
 | Client validation UI | Core flow | P1 |
 | Task list view | Core flow | P1 |
+| Admin Reset / Demo Loop Support | Core flow | P1 |
 | Human client World ID verification | World ID 4.0 | P1.5 — if time permits |
 | Reputation string indicator | Core flow | P2 |
 | Auto-refund path (coded, manually triggerable) | Core flow | P2 |
@@ -408,22 +414,24 @@ All 4 use Claude Code as primary build accelerator.
 
 ### Payment & Escrow
 
-- **FR19:** A client can deposit HBAR into their platform balance (manual for MVP — send to platform account address).
+- **FR19:** A client can deposit HBAR into their platform balance (manual for MVP).
+- **FR19.1:** (Demo Robustness) The system provides a "Simulate Deposit" feature for demo users to instantly fund their balance via a real HBAR transfer + DB update.
 - **FR20:** The platform can lock HBAR in escrow at task creation using the platform's server-side Hedera account, maintaining the association between a task and its escrow TX ID.
 - **FR21:** The platform can release escrowed HBAR to a worker's account upon task validation.
 - **FR22:** The platform can refund escrowed HBAR to a client's platform balance upon deadline expiry.
 - **FR23:** Each Hedera escrow lock and payment release produces a verifiable transaction ID linkable to Hashscan.
-- **FR24:** Transaction IDs for escrow lock and payment release are surfaced in the task detail view.
+- **FR23.1:** (UI Feedback) The UI displays a "Processing Transaction..." state with a Hashscan link immediately upon submission to manage the 3-5s finality gap.
+- **FR24:** Transaction IDs for escrow lock and payment release are surfaced in the task detail view once confirmed.
 - **FR25:** A user can view their platform HBAR balance.
 
 ### Agent Integration
 
 - **FR26:** The system can authenticate an AI agent client via World AgentKit middleware on task creation requests — agent-facing routes require a valid AgentKit header.
-- **FR27:** The system can verify that an agent's wallet address is registered in AgentBook before accepting a task creation request.
+- **FR27:** The system verifies an agent's AgentBook registration and explicitly performs a lookup of the human owner's World ID to demonstrate bilateral cryptographic accountability.
 - **FR28:** An unauthenticated or unregistered agent request is rejected with a clear error response.
 - **FR29:** The agent task creation API returns a task ID and escrow TX ID upon successful task creation.
 - **FR30:** An agent can poll task status via API to determine when to trigger validation.
-- **FR31:** An agent can validate a completed task via API, triggering the payment release flow.
+- **FR31:** An agent can validate a completed task via direct API call (polling-triggered), bypassing fragile webhook callbacks for demo reliability.
 
 ### User Profiles & Reputation
 
@@ -437,8 +445,9 @@ All 4 use Claude Code as primary build accelerator.
 - **FR36:** The system can generate and serve an RP context from a server-side API route for each verification session.
 - **FR37:** Human-facing mutation routes require a valid World ID session — unauthenticated requests are rejected.
 - **FR38:** The system maintains a user session after successful World ID verification, scoping subsequent requests to that verified identity.
-- **FR39:** The system surfaces meaningful error states for key failure scenarios: World ID verification failure, AgentBook unavailable, Hedera TX failure.
+- **FR39:** The system surfaces judge-friendly error states (e.g., "Human Already Registered" with reset/simulator instructions) for key failure scenarios.
 - **FR40:** The system surfaces server-side validation logs and Hedera TX IDs in a format accessible during a demo.
+- **FR41:** (Demo Robustness) The system includes a hidden `/admin` reset route to clear task statuses and refund the platform wallet, allowing for rapid demo looping.
 
 ## Non-Functional Requirements
 
