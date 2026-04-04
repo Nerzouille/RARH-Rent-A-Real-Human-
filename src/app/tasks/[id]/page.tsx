@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 
@@ -13,7 +13,19 @@ function hashscanUrl(txId: string): string {
 
 export default function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const utils = trpc.useUtils();
   const { data: task, isLoading } = trpc.task.get.useQuery({ id });
+  const { data: session } = trpc.auth.me.useQuery();
+  const [claimError, setClaimError] = useState<string | null>(null);
+
+  const { mutate: claimTask, isPending: isClaiming } = trpc.task.claim.useMutation({
+    onSuccess: () => {
+      utils.task.get.invalidate({ id });
+    },
+    onError: (err) => {
+      setClaimError(err.message);
+    },
+  });
 
   if (isLoading) {
     return (
@@ -87,6 +99,43 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         <div>
           <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Description</p>
           <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{task.description}</p>
+        </div>
+
+        {/* Claim action section */}
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 px-4 py-4 flex flex-col gap-3">
+          {!session ? (
+            <p className="text-sm text-zinc-500">
+              Verify your identity to claim tasks.{" "}
+              <Link href="/register" className="text-indigo-600 hover:underline">
+                Verify with World ID →
+              </Link>
+            </p>
+          ) : session.role === "worker" && task.status === "open" ? (
+            <>
+              <p className="text-xs text-zinc-500">
+                Payment is held in escrow until your work is validated.
+              </p>
+              <button
+                onClick={() => { setClaimError(null); claimTask({ taskId: task.id }); }}
+                disabled={isClaiming}
+                className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isClaiming ? "Claiming…" : "Claim This Task"}
+              </button>
+              {claimError && <p className="text-sm text-red-600">{claimError}</p>}
+            </>
+          ) : session.role === "worker" && task.worker_nullifier === session.nullifier ? (
+            <p className="text-sm font-medium text-emerald-600">
+              ✅ You&apos;ve claimed this task. Complete the work, then come back.
+            </p>
+          ) : session.role === "worker" ? (
+            <p className="text-sm text-zinc-500">
+              This task has been claimed.{" "}
+              <Link href="/tasks" className="text-indigo-600 hover:underline">
+                Browse other available tasks →
+              </Link>
+            </p>
+          ) : null}
         </div>
 
         {task.escrow_tx_id && (

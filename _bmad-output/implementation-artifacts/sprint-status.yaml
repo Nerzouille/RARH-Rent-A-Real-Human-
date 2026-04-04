@@ -67,7 +67,7 @@ development_status:
   3-1-database-schema-for-tasks: done
   3-2-human-client-task-creation-ui: review
   3-3-unified-task-list-view-agent-human-distinction: review
-  3-4-task-claim-flow-nullifier-check: backlog
+  3-4-task-claim-flow-nullifier-check: review
   3-5-task-completion-and-validation-ui-with-delight: backlog
   epic-3-retrospective: optional
 

@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { z } from "zod";
 import { TaskSchema, ClientTypeSchema, CreateTaskSchema } from "@/lib/schemas";
 
 // ─── ClientTypeSchema ─────────────────────────────────────────────────────────
@@ -226,6 +227,31 @@ describe("ClientTypeSchema — badge display mapping", () => {
     expect(ClientTypeSchema.safeParse("bot").success).toBe(false);
     expect(ClientTypeSchema.safeParse("system").success).toBe(false);
     expect(ClientTypeSchema.safeParse("").success).toBe(false);
+  });
+});
+
+// ─── task.claim input schema — story 3.4 ────────────────────────────────────
+describe("task.claim input schema", () => {
+  const claimInputSchema = z.object({ taskId: z.string() });
+
+  it("accepts a valid task ID string", () => {
+    const result = claimInputSchema.safeParse({ taskId: "550e8400-e29b-41d4-a716-446655440000" });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts any non-empty string as taskId", () => {
+    const result = claimInputSchema.safeParse({ taskId: "task-abc-123" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects missing taskId", () => {
+    const result = claimInputSchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects non-string taskId", () => {
+    const result = claimInputSchema.safeParse({ taskId: 42 });
+    expect(result.success).toBe(false);
   });
 });
 
