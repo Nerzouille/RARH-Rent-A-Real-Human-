@@ -101,7 +101,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     return (
       <div className="flex flex-col flex-1 items-center justify-center gap-4">
         <p className="font-mono text-sm text-zinc-500">BOUNTY NOT FOUND.</p>
-        <Link href="/tasks" className="font-mono text-xs text-yellow-400 hover:text-yellow-300 tracking-widest">
+        <Link href="/tasks" className="font-mono text-xs text-blue-500 hover:text-blue-400 tracking-widest">
           ← BACK TO BOARD
         </Link>
       </div>
@@ -126,7 +126,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="max-w-2xl mx-auto w-full px-6 py-10 flex flex-col gap-8">
-      <Link href="/tasks" className="font-mono text-xs text-zinc-500 hover:text-yellow-400 transition-colors tracking-widest">
+      <Link href="/tasks" className="font-mono text-xs text-zinc-500 hover:text-blue-500 transition-colors tracking-widest">
         ← BACK TO BOARD
       </Link>
 
@@ -144,7 +144,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
       <div className="grid grid-cols-3 gap-3">
         <div className="border border-zinc-800 rounded bg-zinc-900 px-4 py-3 text-center">
           <p className="font-mono text-xs text-zinc-500 tracking-widest">BOUNTY</p>
-          <p className="font-mono font-black text-yellow-400 text-xl">{task.budget_hbar} ℏ</p>
+          <p className="font-mono font-black text-blue-500 text-xl">{task.budget_hbar} ℏ</p>
         </div>
         <div className="border border-zinc-800 rounded bg-zinc-900 px-4 py-3 text-center">
           <p className="font-mono text-xs text-zinc-500 tracking-widest">DEADLINE</p>
@@ -176,7 +176,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
             <p className="text-sm text-zinc-400">Verify your humanity to claim bounties.</p>
             <Link
               href="/register"
-              className="inline-flex items-center justify-center px-5 py-3 bg-yellow-400 text-zinc-950 font-mono font-bold text-sm tracking-widest rounded hover:bg-yellow-300 transition-colors"
+              className="inline-flex items-center justify-center px-5 py-3 bg-blue-500 text-zinc-950 font-mono font-bold text-sm tracking-widest rounded hover:bg-blue-400 transition-colors"
             >
               PROVE YOU&apos;RE HUMAN →
             </Link>
@@ -187,7 +187,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
             <button
               onClick={() => { clearErrors(); claimTask({ taskId: task.id }); }}
               disabled={isClaiming}
-              className="w-full bg-yellow-400 text-zinc-950 font-mono font-bold text-sm tracking-widest px-4 py-3 rounded hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-blue-500 text-zinc-950 font-mono font-bold text-sm tracking-widest px-4 py-3 rounded hover:bg-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isClaiming ? "CLAIMING…" : "CLAIM THIS BOUNTY →"}
             </button>
@@ -201,7 +201,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
             <button
               onClick={() => { clearErrors(); markComplete({ taskId: task.id }); }}
               disabled={isMarkingComplete}
-              className="w-full bg-yellow-400 text-zinc-950 font-mono font-bold text-sm tracking-widest px-4 py-3 rounded hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-blue-500 text-zinc-950 font-mono font-bold text-sm tracking-widest px-4 py-3 rounded hover:bg-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isMarkingComplete ? "SUBMITTING…" : "MARK AS COMPLETE →"}
             </button>
@@ -239,7 +239,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
               {showRecentValidationSuccess ? "PAYMENT RELEASED TO WORKER." : "TASK COMPLETE."}
             </p>
             {paymentLink && (
-              <a href={paymentLink} target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-zinc-400 hover:text-yellow-400 transition-colors">
+              <a href={paymentLink} target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-zinc-400 hover:text-blue-500 transition-colors">
                 VIEW ON HASHSCAN ↗
               </a>
             )}
@@ -247,7 +247,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         ) : (
           <p className="text-sm text-zinc-500">
             This bounty is already claimed.{" "}
-            <Link href="/tasks" className="text-yellow-400 hover:text-yellow-300">
+            <Link href="/tasks" className="text-blue-500 hover:text-blue-400">
               Browse others →
             </Link>
           </p>

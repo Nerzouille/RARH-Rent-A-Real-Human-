@@ -30,7 +30,7 @@ export default function DashboardPage() {
           <p className="font-mono text-xs text-zinc-500 tracking-widest uppercase mb-1">Dashboard</p>
           <h1 className="font-mono font-black text-3xl text-zinc-50 tracking-tight">
             WELCOME BACK,{" "}
-            <span className="text-yellow-400">{session.nullifier.slice(0, 10).toUpperCase()}…</span>
+            <span className="text-blue-500">{session.nullifier.slice(0, 10).toUpperCase()}…</span>
           </h1>
         </div>
         <div className="flex items-center gap-2">
@@ -42,7 +42,7 @@ export default function DashboardPage() {
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "BALANCE", value: `${balanceData?.balance ?? 0} ℏ`, accent: "text-yellow-400" },
+          { label: "BALANCE", value: `${balanceData?.balance ?? 0} ℏ`, accent: "text-blue-500" },
           { label: "TASKS DONE", value: profile?.tasksCompleted ?? 0, accent: "text-emerald-400" },
           { label: "ACTIVE JOBS", value: activeClaimed.length, accent: "text-blue-400" },
           { label: "POSTED JOBS", value: activePosted.length, accent: "text-violet-400" },
@@ -58,10 +58,10 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Link
           href="/tasks"
-          className="group border border-zinc-800 hover:border-yellow-400/50 rounded bg-zinc-900 p-6 flex flex-col gap-3 transition-colors"
+          className="group border border-zinc-800 hover:border-blue-500/50 rounded bg-zinc-900 p-6 flex flex-col gap-3 transition-colors"
         >
           <span className="font-mono text-xs text-zinc-500 tracking-widest">AS A WORKER</span>
-          <p className="font-mono font-black text-xl text-zinc-50 group-hover:text-yellow-400 transition-colors">
+          <p className="font-mono font-black text-xl text-zinc-50 group-hover:text-blue-500 transition-colors">
             FIND A JOB →
           </p>
           <p className="text-sm text-zinc-400">
@@ -71,10 +71,10 @@ export default function DashboardPage() {
 
         <Link
           href="/client/new-task"
-          className="group border border-zinc-800 hover:border-yellow-400/50 rounded bg-zinc-900 p-6 flex flex-col gap-3 transition-colors"
+          className="group border border-zinc-800 hover:border-blue-500/50 rounded bg-zinc-900 p-6 flex flex-col gap-3 transition-colors"
         >
           <span className="font-mono text-xs text-zinc-500 tracking-widest">AS A CLIENT</span>
-          <p className="font-mono font-black text-xl text-zinc-50 group-hover:text-yellow-400 transition-colors">
+          <p className="font-mono font-black text-xl text-zinc-50 group-hover:text-blue-500 transition-colors">
             POST A JOB →
           </p>
           <p className="text-sm text-zinc-400">
@@ -94,7 +94,7 @@ export default function DashboardPage() {
               className="border border-zinc-800 hover:border-zinc-600 rounded bg-zinc-900 px-4 py-3 flex items-center justify-between gap-4 transition-colors group"
             >
               <span className="text-sm text-zinc-300 group-hover:text-zinc-50 truncate">{task.title}</span>
-              <span className="font-mono text-xs text-yellow-400 shrink-0">{task.budget_hbar} ℏ</span>
+              <span className="font-mono text-xs text-blue-500 shrink-0">{task.budget_hbar} ℏ</span>
             </Link>
           ))}
         </section>

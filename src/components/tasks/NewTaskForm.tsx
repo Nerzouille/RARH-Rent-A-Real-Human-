@@ -144,7 +144,7 @@ export function NewTaskForm() {
       {/* Balance display */}
       <div className="border border-zinc-800 rounded bg-zinc-900 px-4 py-3 flex items-center justify-between">
         <span className="font-mono text-xs text-zinc-500 tracking-widest">YOUR BALANCE</span>
-        <span className="font-mono font-black text-yellow-400 text-lg">
+        <span className="font-mono font-black text-blue-500 text-lg">
           {balanceData?.balance ?? 0} ℏ
         </span>
       </div>
@@ -163,8 +163,8 @@ export function NewTaskForm() {
           value={form.title}
           onChange={(e) => handleChange("title", e.target.value)}
           placeholder='e.g. "Pick up package in Osaka"'
-          className={`w-full rounded border px-3 py-2 text-sm bg-zinc-900 text-zinc-50 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-yellow-400 font-mono ${
-            errors.title ? "border-red-500" : "border-zinc-700 focus:border-yellow-400"
+          className={`w-full rounded border px-3 py-2 text-sm bg-zinc-900 text-zinc-50 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono ${
+            errors.title ? "border-red-500" : "border-zinc-700 focus:border-blue-500"
           }`}
         />
         {errors.title && <p className="mt-1 font-mono text-xs text-red-400">{errors.title}</p>}
@@ -184,8 +184,8 @@ export function NewTaskForm() {
           value={form.description}
           onChange={(e) => handleChange("description", e.target.value)}
           placeholder="What exactly needs to be done?"
-          className={`w-full rounded border px-3 py-2 text-sm bg-zinc-900 text-zinc-50 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-yellow-400 font-mono resize-none ${
-            errors.description ? "border-red-500" : "border-zinc-700 focus:border-yellow-400"
+          className={`w-full rounded border px-3 py-2 text-sm bg-zinc-900 text-zinc-50 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono resize-none ${
+            errors.description ? "border-red-500" : "border-zinc-700 focus:border-blue-500"
           }`}
         />
         {errors.description && (
@@ -209,8 +209,8 @@ export function NewTaskForm() {
           value={form.budget_hbar}
           onChange={(e) => handleChange("budget_hbar", e.target.value)}
           placeholder="15"
-          className={`w-full rounded border px-3 py-2 text-sm bg-zinc-900 text-zinc-50 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-yellow-400 font-mono ${
-            errors.budget_hbar ? "border-red-500" : "border-zinc-700 focus:border-yellow-400"
+          className={`w-full rounded border px-3 py-2 text-sm bg-zinc-900 text-zinc-50 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono ${
+            errors.budget_hbar ? "border-red-500" : "border-zinc-700 focus:border-blue-500"
           }`}
         />
         <p className="mt-1 font-mono text-xs text-zinc-600">Held in Hedera escrow on task creation</p>
@@ -233,8 +233,8 @@ export function NewTaskForm() {
           value={form.deadline}
           min={new Date().toISOString().split("T")[0]}
           onChange={(e) => handleChange("deadline", e.target.value)}
-          className={`w-full rounded border px-3 py-2 text-sm bg-zinc-900 text-zinc-50 focus:outline-none focus:ring-1 focus:ring-yellow-400 font-mono ${
-            errors.deadline ? "border-red-500" : "border-zinc-700 focus:border-yellow-400"
+          className={`w-full rounded border px-3 py-2 text-sm bg-zinc-900 text-zinc-50 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono ${
+            errors.deadline ? "border-red-500" : "border-zinc-700 focus:border-blue-500"
           }`}
         />
         {errors.deadline && <p className="mt-1 font-mono text-xs text-red-400">{errors.deadline}</p>}
@@ -251,7 +251,7 @@ export function NewTaskForm() {
       <button
         type="submit"
         disabled={isDisabled}
-        className="w-full bg-yellow-400 text-zinc-950 font-mono font-bold text-sm tracking-widest px-4 py-3 rounded hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="w-full bg-blue-500 text-zinc-950 font-mono font-bold text-sm tracking-widest px-4 py-3 rounded hover:bg-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {createTask.isPending ? "POSTING…" : "POST BOUNTY & FUND ESCROW →"}
       </button>

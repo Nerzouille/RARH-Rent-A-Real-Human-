@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { trpc } from "@/lib/trpc/client";
 
+// Checkerboard pattern: 1 = blue filled, 0 = transparent
+const CHECKER = [1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1];
+
 export default function Home() {
   const router = useRouter();
   const { data: session, isLoading } = trpc.auth.me.useQuery();
@@ -18,70 +21,108 @@ export default function Home() {
   if (isLoading || session) return null;
 
   return (
-    <div className="flex flex-col flex-1 bg-zinc-950">
+    <div className="relative flex flex-col overflow-hidden" style={{ minHeight: "calc(100vh - 56px)", background: "#000" }}>
+      {/* Blue ambient glow — bottom left */}
+      <div
+        className="absolute bottom-0 left-0 pointer-events-none"
+        style={{
+          width: "700px",
+          height: "700px",
+          background: "radial-gradient(circle at 0% 100%, rgba(37,99,235,0.4) 0%, transparent 65%)",
+        }}
+      />
+
+      {/* Top info bar */}
+      <div className="relative z-10 mx-6 mt-6 border border-blue-700/60 rounded-2xl flex items-center justify-between px-7 py-3">
+        <span className="text-sm text-zinc-400 font-light">Verified Human Marketplace</span>
+        <span className="text-sm font-medium tracking-wide" style={{ color: "#3b82f6" }}>
+          ETHGlobal Cannes · 2026
+        </span>
+        <span className="text-sm text-zinc-500 hidden sm:block">humanproof.app</span>
+      </div>
+
       {/* Hero */}
-      <section className="flex flex-col items-center justify-center text-center px-6 py-24 gap-10 max-w-4xl mx-auto w-full flex-1">
-        {/* Tag */}
-        <div className="flex items-center gap-3">
-          <span className="h-px w-8 bg-yellow-400" />
-          <span className="font-mono text-xs tracking-widest text-yellow-400 uppercase">
-            ETHGlobal Cannes 2026
-          </span>
-          <span className="h-px w-8 bg-yellow-400" />
-        </div>
+      <div className="relative z-10 flex-1 flex items-center justify-center px-8 py-8">
+        <div className="relative">
+          {/* Checkerboard — top right of text block */}
+          <div className="absolute -top-6 right-0 translate-x-10 hidden md:grid grid-cols-4 gap-1.5">
+            {CHECKER.map((filled, i) => (
+              <div
+                key={i}
+                className="w-6 h-6"
+                style={{ background: filled ? "#2563eb" : "transparent" }}
+              />
+            ))}
+          </div>
 
-        {/* Headline */}
-        <div className="flex flex-col gap-4">
-          <h1 className="font-mono font-black text-6xl sm:text-8xl leading-none tracking-tighter text-zinc-50">
-            HIRE<br />
-            <span className="text-yellow-400">HUMANS.</span><br />
-            NOT BOTS.
-          </h1>
-          <p className="text-zinc-400 text-lg max-w-lg mx-auto leading-relaxed">
-            Every contractor is iris-scanned and cryptographically verified.
-            <br />
-            <span className="text-zinc-300">No bots. No fakes. Zero trust needed.</span>
-          </p>
-        </div>
+          {/* Line 1 */}
+          <div className="leading-none">
+            <span
+              className="font-black tracking-tighter leading-none block"
+              style={{
+                fontSize: "clamp(4rem, 13vw, 13rem)",
+                color: "#f0ebe0",
+                lineHeight: 0.9,
+              }}
+            >
+              Rent a
+            </span>
+          </div>
 
-        {/* CTA */}
-        <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-          <Link
-            href="/register"
-            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-yellow-400 text-zinc-950 font-mono font-black text-sm tracking-widest uppercase rounded hover:bg-yellow-300 transition-colors"
-          >
-            PROVE YOU&apos;RE HUMAN →
-          </Link>
-          <Link
-            href="/tasks"
-            className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-zinc-700 text-zinc-400 font-mono text-sm tracking-widest uppercase rounded hover:border-zinc-500 hover:text-zinc-200 transition-colors"
-          >
-            BROWSE JOBS
-          </Link>
-        </div>
+          {/* Line 2 with asterisk */}
+          <div className="flex items-center leading-none" style={{ marginTop: "-0.05em" }}>
+            <span
+              className="font-black leading-none"
+              style={{
+                fontSize: "clamp(3rem, 9vw, 9rem)",
+                color: "#2563eb",
+                lineHeight: 0.9,
+                marginRight: "0.05em",
+              }}
+            >
+              *
+            </span>
+            <span
+              className="font-black tracking-tighter leading-none"
+              style={{
+                fontSize: "clamp(4rem, 13vw, 13rem)",
+                color: "#f0ebe0",
+                lineHeight: 0.9,
+              }}
+            >
+              Human.
+            </span>
+          </div>
 
-        {/* Stats bar */}
-        <div className="w-full border border-zinc-800 rounded divide-x divide-zinc-800 grid grid-cols-3 mt-4">
-          {[
-            { label: "VERIFICATION", value: "WORLD ID 4.0", sub: "Orb-level biometric" },
-            { label: "AGENTS", value: "AGENTKIT", sub: "Bots post jobs too" },
-            { label: "PAYMENTS", value: "HEDERA", sub: "HBAR escrow & release" },
-          ].map(({ label, value, sub }) => (
-            <div key={label} className="px-4 py-5 flex flex-col gap-1 text-center">
-              <span className="font-mono text-xs text-zinc-500 tracking-widest">{label}</span>
-              <span className="font-mono font-bold text-yellow-400 text-sm">{value}</span>
-              <span className="text-xs text-zinc-500">{sub}</span>
-            </div>
-          ))}
+          {/* CTAs */}
+          <div className="mt-10 flex flex-wrap items-center gap-4">
+            <Link
+              href="/register"
+              className="px-6 py-2.5 border border-blue-600/70 rounded-xl text-sm font-mono tracking-widest transition-all hover:bg-blue-600/15 hover:border-blue-500"
+              style={{ color: "#60a5fa" }}
+            >
+              PROVE HUMANITY →
+            </Link>
+            <Link
+              href="/tasks"
+              className="text-sm font-mono tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              BROWSE BOUNTIES
+            </Link>
+          </div>
         </div>
-      </section>
+      </div>
 
-      {/* Manifesto strip */}
-      <section className="border-t border-zinc-800 bg-zinc-900/50 px-6 py-8">
-        <p className="font-mono text-xs text-zinc-500 text-center tracking-widest max-w-2xl mx-auto">
-          IN A WORLD WHERE AI AGENTS CAN HIRE, FIRE, AND PAY — THE LAST THING OF VALUE IS A VERIFIED HUMAN ON THE OTHER END.
-        </p>
-      </section>
+      {/* Bottom bar */}
+      <div className="relative z-10 flex items-center justify-between px-8 py-6">
+        <span className="text-sm font-light" style={{ color: "#f0ebe0" }}>
+          HumanProof
+        </span>
+        <span className="text-sm text-zinc-600 text-center hidden sm:block font-mono tracking-widest">
+          WORLD ID · HEDERA · MCP 2.0
+        </span>
+        <span className="text-sm text-zinc-500">ETH Global 2026</span>
+      </div>
     </div>
   );
 }

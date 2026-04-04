@@ -12,13 +12,13 @@ export function TaskCard({ task }: { task: Task }) {
   return (
     <Link
       href={`/tasks/${task.id}`}
-      className="group block border border-zinc-800 hover:border-yellow-400/50 rounded bg-zinc-900 p-5 flex flex-col gap-3 transition-colors"
+      className="group block border border-zinc-800 hover:border-blue-500/50 rounded bg-zinc-900 p-5 flex flex-col gap-3 transition-colors"
     >
       <div className="flex items-start justify-between gap-3">
-        <h2 className="font-mono font-bold text-zinc-50 group-hover:text-yellow-400 transition-colors line-clamp-2 text-sm leading-snug flex-1">
+        <h2 className="font-mono font-bold text-zinc-50 group-hover:text-blue-500 transition-colors line-clamp-2 text-sm leading-snug flex-1">
           {task.title}
         </h2>
-        <span className="font-mono font-black text-yellow-400 text-lg shrink-0 leading-none">
+        <span className="font-mono font-black text-blue-500 text-lg shrink-0 leading-none">
           {task.budget_hbar} ℏ
         </span>
       </div>

@@ -16,7 +16,7 @@ export default function RegisterPage() {
           </p>
           <h1 className="font-mono font-black text-4xl text-zinc-50 leading-none">
             PROVE<br />
-            <span className="text-yellow-400">YOU&apos;RE</span><br />
+            <span className="text-blue-500">YOU&apos;RE</span><br />
             HUMAN.
           </h1>
           <p className="text-sm text-zinc-400 leading-relaxed">

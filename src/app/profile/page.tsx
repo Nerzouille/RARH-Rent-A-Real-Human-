@@ -36,10 +36,10 @@ export default function ProfilePage() {
           <p className="font-mono text-xs text-zinc-500 tracking-widest uppercase mb-1">Identity</p>
           <h1 className="font-mono font-black text-3xl text-zinc-50 leading-none">
             MY<br />
-            <span className="text-yellow-400">PROFILE.</span>
+            <span className="text-blue-500">PROFILE.</span>
           </h1>
         </div>
-        <Link href="/tasks" className="font-mono text-xs text-zinc-500 hover:text-yellow-400 transition-colors tracking-widest">
+        <Link href="/tasks" className="font-mono text-xs text-zinc-500 hover:text-blue-500 transition-colors tracking-widest">
           ← JOBS
         </Link>
       </div>
@@ -55,7 +55,7 @@ export default function ProfilePage() {
         <p className="font-mono text-xs text-zinc-500 tracking-widest">REPUTATION</p>
         {profile.tasksCompleted > 0 ? (
           <p className="text-sm text-zinc-300 leading-relaxed">
-            <span className="text-yellow-400 font-mono font-bold">{profile.tasksCompleted}</span> task{profile.tasksCompleted !== 1 ? "s" : ""} completed —
+            <span className="text-blue-500 font-mono font-bold">{profile.tasksCompleted}</span> task{profile.tasksCompleted !== 1 ? "s" : ""} completed —
             your track record is tied to your World ID nullifier, not to a username. Unfakeable.
           </p>
         ) : (
@@ -65,7 +65,7 @@ export default function ProfilePage() {
         )}
         <Link
           href="/tasks"
-          className="inline-flex items-center justify-center px-5 py-3 bg-yellow-400 text-zinc-950 font-mono font-bold text-sm tracking-widest rounded hover:bg-yellow-300 transition-colors"
+          className="inline-flex items-center justify-center px-5 py-3 bg-blue-500 text-zinc-950 font-mono font-bold text-sm tracking-widest rounded hover:bg-blue-400 transition-colors"
         >
           BROWSE BOUNTIES →
         </Link>

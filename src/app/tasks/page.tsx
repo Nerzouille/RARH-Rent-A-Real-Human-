@@ -63,17 +63,17 @@ export default function TasksPage() {
           <p className="font-mono text-xs text-zinc-500 tracking-widest uppercase mb-1">Bounty Board</p>
           <h1 className="font-mono font-black text-3xl text-zinc-50 tracking-tight leading-none">
             OPEN<br />
-            <span className="text-yellow-400">BOUNTIES.</span>
+            <span className="text-blue-500">BOUNTIES.</span>
           </h1>
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="border border-zinc-800 rounded bg-zinc-900 px-4 py-3 text-right">
             <p className="font-mono text-xs text-zinc-500 tracking-widest">YOUR BALANCE</p>
-            <p className="font-mono font-black text-yellow-400 text-xl">{balanceData?.balance ?? 0} ℏ</p>
+            <p className="font-mono font-black text-blue-500 text-xl">{balanceData?.balance ?? 0} ℏ</p>
           </div>
           <Link
             href="/client/new-task"
-            className="font-mono text-xs text-zinc-400 hover:text-yellow-400 transition-colors tracking-widest"
+            className="font-mono text-xs text-zinc-400 hover:text-blue-500 transition-colors tracking-widest"
           >
             + POST A JOB →
           </Link>
@@ -91,7 +91,7 @@ export default function TasksPage() {
                 onClick={() => setBudgetFilter(pill.value)}
                 className={`font-mono px-3 py-1 rounded text-xs transition-colors ${
                   budgetFilter === pill.value
-                    ? "bg-yellow-400 text-zinc-950 font-bold"
+                    ? "bg-blue-500 text-zinc-950 font-bold"
                     : "border border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
                 }`}
               >
@@ -108,7 +108,7 @@ export default function TasksPage() {
             <p className="font-mono text-xs text-zinc-500 tracking-widest">NO BOUNTIES POSTED YET.</p>
             <Link
               href="/client/new-task"
-              className="inline-block mt-3 font-mono text-xs text-yellow-400 hover:text-yellow-300 tracking-widest"
+              className="inline-block mt-3 font-mono text-xs text-blue-500 hover:text-blue-400 tracking-widest"
             >
               BE THE FIRST TO POST →
             </Link>

@@ -90,14 +90,13 @@ export function RegisterWidget({
 
   if (isMock) {
     return (
-      <Button
-        size="lg"
+      <button
         onClick={handleMockRegister}
         disabled={registerMutation.isPending}
-        className="w-full"
+        className="w-full bg-blue-600 text-white font-mono font-bold text-sm tracking-widest px-4 py-3 rounded-xl hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        {registerMutation.isPending ? "Registering…" : "Simulate Registration"}
-      </Button>
+        {registerMutation.isPending ? "VERIFYING…" : "SIMULATE WORLD ID →"}
+      </button>
     );
   }
 
@@ -129,18 +128,17 @@ export function RegisterWidget({
 
   return (
     <>
-      <Button
-        size="lg"
+      <button
         onClick={() => setOpen(true)}
         disabled={!canOpenWidget || registerMutation.isPending}
-        className="w-full"
+        className="w-full bg-blue-600 text-white font-mono font-bold text-sm tracking-widest px-4 py-3 rounded-xl hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {fetchError
-          ? "Error loading widget"
+          ? "ERROR — REFRESH"
           : rpContext
-          ? "Register with World ID"
-          : "Loading…"}
-      </Button>
+          ? "VERIFY WITH WORLD ID →"
+          : "LOADING…"}
+      </button>
 
       {canOpenWidget && (
         <IDKitRequestWidget

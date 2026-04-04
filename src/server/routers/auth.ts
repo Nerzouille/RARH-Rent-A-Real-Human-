@@ -13,6 +13,12 @@ export const authRouter = router({
     return ctx.session ?? null;
   }),
 
+  logout: publicProcedure.mutation(async () => {
+    const cookieStore = await cookies();
+    cookieStore.delete("session");
+    return { success: true };
+  }),
+
   profile: protectedProcedure.query(async ({ ctx }) => {
     const user = await db.query.users.findFirst({
       where: eq(users.nullifier, ctx.session.nullifier),
