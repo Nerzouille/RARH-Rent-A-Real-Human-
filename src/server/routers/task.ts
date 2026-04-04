@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { tasks, users } from "@/server/db/schema";
 import { CreateTaskSchema, TaskStatusSchema } from "@/lib/schemas";
 import { eq, sql, and, gte } from "drizzle-orm";
-import { lockEscrow, hashscanUrl } from "@/lib/core/hedera";
+import { lockEscrow, releasePayment, hashscanUrl } from "@/lib/core/hedera";
 
 export const taskRouter = router({
   // List tasks — optional status filter; defaults to "open" for backwards compat
@@ -192,7 +192,6 @@ export const taskRouter = router({
         });
       }
 
-      // Agent tasks must be validated via the MCP API, not tRPC
       if (task.client_type === "agent") {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -214,13 +213,76 @@ export const taskRouter = router({
         });
       }
 
-      // TODO (story 4.4): trigger Hedera payment release here
-      const [updated] = await db
-        .update(tasks)
-        .set({ status: "validated", updated_at: new Date() })
-        .where(eq(tasks.id, input.taskId))
-        .returning();
+      if (task.payment_tx_id) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Payment already released for this task",
+        });
+      }
 
-      return updated;
+      // Fetch worker to get their Hedera account (if any)
+      const worker = task.worker_nullifier
+        ? await db.query.users.findFirst({
+            where: (u, { eq }) => eq(u.nullifier, task.worker_nullifier!),
+          })
+        : null;
+
+      if (!worker) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Worker not found for this task",
+        });
+      }
+
+      // Execute Hedera payment TX first — DB changes only after confirmed SUCCESS
+      let paymentTxId: string;
+      try {
+        paymentTxId = await releasePayment(
+          worker.hedera_account_id,
+          task.budget_hbar,
+          task.id
+        );
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Hedera payment release failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        });
+      }
+
+      // Wrap all DB updates in a transaction for atomicity
+      const updated = await db.transaction(async (tx) => {
+        const [updatedTask] = await tx
+          .update(tasks)
+          .set({
+            status: "validated",
+            payment_tx_id: paymentTxId,
+            updated_at: new Date(),
+          })
+          .where(and(eq(tasks.id, input.taskId), eq(tasks.status, "completed")))
+          .returning();
+
+        if (!updatedTask) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Task was already validated by a concurrent request",
+          });
+        }
+
+        await tx
+          .update(users)
+          .set({
+            tasks_completed: sql`${users.tasks_completed} + 1`,
+            hbar_balance: sql`${users.hbar_balance} + ${task.budget_hbar}`,
+          })
+          .where(eq(users.id, worker.id));
+
+        return updatedTask;
+      });
+
+      return {
+        ...updated,
+        payment_tx_id: paymentTxId,
+        hashscanLink: hashscanUrl(paymentTxId),
+      };
     }),
 });
