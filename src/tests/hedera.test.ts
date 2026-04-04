@@ -44,6 +44,12 @@ describe("getOperatorAccountId", () => {
     expect(() => getOperatorAccountId()).toThrow("HEDERA_ACCOUNT_ID is not set");
   });
 
+  it("throws when HEDERA_ACCOUNT_ID format is invalid", () => {
+    process.env.HEDERA_ACCOUNT_ID = "invalid-id";
+    process.env.HEDERA_PRIVATE_KEY = "0xfakekey";
+    expect(() => getOperatorAccountId()).toThrow("Invalid HEDERA_ACCOUNT_ID format");
+  });
+
   it("throws when HEDERA_PRIVATE_KEY is missing", () => {
     process.env.HEDERA_ACCOUNT_ID = "0.0.99999";
     delete process.env.HEDERA_PRIVATE_KEY;

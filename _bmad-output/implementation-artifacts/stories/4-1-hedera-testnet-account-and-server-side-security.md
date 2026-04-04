@@ -47,6 +47,8 @@ So that I can sign escrow and payment transactions securely without exposing key
 - [x] [Review][Patch] Redundant `validateEnv()` call in `getAccountBalance` [src/lib/core/hedera.ts]
 - [x] [Review][Patch] `getPlatformBalance` missing admin role check [src/server/routers/payment.ts]
 - [x] [Review][Patch] Tests don't restore `process.env` with `afterAll` [src/tests/hedera.test.ts]
+- [x] [Review][Patch] Unhandled error states in `getAccountBalance` [src/lib/core/hedera.ts]
+- [x] [Review][Patch] Superficial environment variable validation in `validateEnv` [src/lib/core/hedera.ts]
 - [x] [Review][Defer] `PrivateKey.fromStringECDSA` no fallback for wrong key format — deferred, pre-existing
 - [x] [Review][Defer] `releasePayment` no auth check + not idempotent — deferred, scope story 4.4
 - [x] [Review][Defer] `lockEscrow` not idempotent — deferred, scope story 4.3

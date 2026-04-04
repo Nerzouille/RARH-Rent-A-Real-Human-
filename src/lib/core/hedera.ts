@@ -15,6 +15,9 @@ function validateEnv(): { accountId: string; privateKey: string } {
   if (!accountId) {
     throw new Error("HEDERA_ACCOUNT_ID is not set. Configure it in .env.local");
   }
+  if (!/^\d+\.\d+\.\d+$/.test(accountId)) {
+    throw new Error(`Invalid HEDERA_ACCOUNT_ID format: ${accountId}. Expected 0.0.x`);
+  }
   if (!privateKey) {
     throw new Error("HEDERA_PRIVATE_KEY is not set. Configure it in .env.local");
   }
@@ -46,13 +49,18 @@ export function getOperatorAccountId(): string {
  * Queries the platform operator account's HBAR balance on Hedera Testnet.
  */
 export async function getAccountBalance(): Promise<number> {
-  const client = getClient();
+  try {
+    const client = getClient();
 
-  const balance = await new AccountBalanceQuery()
-    .setAccountId(getOperatorAccountId())
-    .execute(client);
+    const balance = await new AccountBalanceQuery()
+      .setAccountId(getOperatorAccountId())
+      .execute(client);
 
-  return balance.hbars.toBigNumber().toNumber();
+    return balance.hbars.toBigNumber().toNumber();
+  } catch (error) {
+    console.error("Hedera balance query failed:", error);
+    throw new Error("Failed to query Hedera account balance. Check network or configuration.");
+  }
 }
 
 export async function lockEscrow(
