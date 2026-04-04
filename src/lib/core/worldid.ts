@@ -31,9 +31,9 @@ export async function verifyWorldIDProof(
     };
   }
 
-  const rpId = process.env.WORLD_RP_ID?.trim();
+  const rpId = process.env.RP_ID?.trim();
   if (!rpId) {
-    throw new Error("WORLD_RP_ID is not configured");
+    throw new Error("RP_ID is not configured");
   }
 
   const res = await fetch(
