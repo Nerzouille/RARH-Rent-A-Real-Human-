@@ -1,6 +1,14 @@
 import { SignJWT, jwtVerify } from "jose";
 import { type SessionPayload } from "@/lib/schemas";
 
+export const SESSION_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  maxAge: 60 * 60 * 24,
+  path: "/",
+} as const;
+
 const secret = new TextEncoder().encode(process.env.SESSION_SECRET ?? "dev-secret-change-me");
 
 export async function createSession(payload: SessionPayload): Promise<string> {

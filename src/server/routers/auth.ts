@@ -2,10 +2,8 @@ import { z } from "zod";
 import { cookies } from "next/headers";
 import { router, publicProcedure } from "@/lib/trpc/server";
 import { TRPCError } from "@trpc/server";
-import { db } from "@/lib/db";
-import { users, nullifiers } from "@/server/db/schema";
-import { verifyWorldIDProof } from "@/lib/core/worldid";
-import { createSession } from "@/lib/core/session";
+import { completeRegistration, HumanAlreadyRegisteredError } from "@/lib/core/auth-register";
+import { SESSION_COOKIE_OPTIONS } from "@/lib/core/session";
 
 export const authRouter = router({
   me: publicProcedure.query(({ ctx }) => {
@@ -15,45 +13,26 @@ export const authRouter = router({
   register: publicProcedure
     .input(
       z.object({
-        rp_id: z.string(),
+        // rp_id is accepted for backward-compat with existing clients but ignored server-side;
+        // the server always uses WORLD_RP_ID from the environment.
+        rp_id: z.string().optional(),
         idkit_response: z.unknown(),
         role: z.enum(["worker", "client"]),
       })
     )
     .mutation(async ({ input }) => {
-      const { nullifier } = await verifyWorldIDProof(input.rp_id, input.idkit_response);
+      try {
+        const { user, token } = await completeRegistration(input.idkit_response, input.role);
 
-      const existing = await db.query.nullifiers.findFirst({
-        where: (n, { and, eq }) => and(eq(n.nullifier, nullifier), eq(n.action, "register")),
-      });
+        const cookieStore = await cookies();
+        cookieStore.set("session", token, SESSION_COOKIE_OPTIONS);
 
-      if (existing) {
-        throw new TRPCError({ code: "CONFLICT", message: "HUMAN_ALREADY_REGISTERED" });
+        return { user };
+      } catch (err) {
+        if (err instanceof HumanAlreadyRegisteredError) {
+          throw new TRPCError({ code: "CONFLICT", message: "HUMAN_ALREADY_REGISTERED" });
+        }
+        throw new TRPCError({ code: "BAD_REQUEST", message: String(err) });
       }
-
-      const [user] = await db
-        .insert(users)
-        .values({ nullifier, role: input.role })
-        .onConflictDoUpdate({ target: users.nullifier, set: { role: input.role } })
-        .returning();
-
-      await db.insert(nullifiers).values({ nullifier, action: "register" }).onConflictDoNothing();
-
-      const token = await createSession({
-        nullifier,
-        role: input.role,
-        userId: user.id,
-      });
-
-      const cookieStore = await cookies();
-      cookieStore.set("session", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24,
-        path: "/",
-      });
-
-      return { user };
     }),
 });

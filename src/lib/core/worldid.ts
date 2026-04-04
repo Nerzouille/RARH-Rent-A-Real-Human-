@@ -15,8 +15,8 @@ export async function generateRPContext(action: string) {
   };
 }
 
+// The RP ID is always sourced from the server environment — never from the caller.
 export async function verifyWorldIDProof(
-  rpId: string,
   idkitResponse: unknown
 ): Promise<{ nullifier: string; verified: boolean }> {
   // Mock mode for development — returns a deterministic nullifier from the input
@@ -31,6 +31,11 @@ export async function verifyWorldIDProof(
     };
   }
 
+  const rpId = process.env.WORLD_RP_ID;
+  if (!rpId) {
+    throw new Error("WORLD_RP_ID is not configured");
+  }
+
   const res = await fetch(
     `https://developer.world.org/api/v4/verify/${rpId}`,
     {
@@ -41,12 +46,16 @@ export async function verifyWorldIDProof(
   );
 
   if (!res.ok) {
-    const err = await res.json();
+    const err = await res.json().catch(() => ({}));
     throw new Error(`World ID verification failed: ${JSON.stringify(err)}`);
   }
 
   const result = await res.json();
   const nullifier = result.nullifier ?? result.nullifier_hash;
+
+  if (!nullifier || typeof nullifier !== "string") {
+    throw new Error("World ID verification returned invalid or missing nullifier");
+  }
 
   return { nullifier, verified: true };
 }

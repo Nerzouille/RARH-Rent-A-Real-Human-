@@ -29,7 +29,7 @@ describe("Mock mode end-to-end flow", () => {
     const { createSession, verifySession } = await import("@/lib/core/session");
 
     // Step 1: Verify mock proof
-    const { nullifier, verified } = await verifyWorldIDProof("mock-rp-id", {
+    const { nullifier, verified } = await verifyWorldIDProof({
       proof: "demo-user",
     });
     expect(verified).toBe(true);
@@ -56,8 +56,8 @@ describe("Mock mode end-to-end flow", () => {
     const { verifyWorldIDProof } = await import("@/lib/core/worldid");
 
     const proof = { proof: "kenji-demo", merkle_root: "0x123" };
-    const r1 = await verifyWorldIDProof("mock-rp-id", proof);
-    const r2 = await verifyWorldIDProof("mock-rp-id", proof);
+    const r1 = await verifyWorldIDProof(proof);
+    const r2 = await verifyWorldIDProof(proof);
 
     expect(r1.nullifier).toBe(r2.nullifier);
   });
