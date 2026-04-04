@@ -1,6 +1,6 @@
 # Story 2.2: AgentBook Lookup & Human Link (Fail-Soft)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -140,6 +140,10 @@ This gives a readable, reproducible value for demo purposes.
 ### Agent Model Used
 
 Claude Sonnet 4.6
+
+### Review Findings
+
+- [x] [Review][Patch] Regex EVM dupliquée inline dans `registry.ts` [`src/server/mcp/registry.ts:35`] — Fixed: `EVM_ADDRESS_RE` exporté depuis `schemas/index.ts`, importé dans `registry.ts`
 
 ### Completion Notes List
 

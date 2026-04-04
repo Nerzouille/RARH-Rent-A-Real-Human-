@@ -14,13 +14,14 @@ import { db } from "@/lib/db";
 import { tasks } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { lookupAgentBookOwner } from "@/lib/core/agentkit";
+import { EVM_ADDRESS_RE } from "@/lib/schemas";
 
 export function registerTools(server: McpServer): void {
   // ─── Identity Tool ──────────────────────────────────────────────────────────
   server.tool(
     "get_identity",
     "Returns the AgentBook identity for a given agent wallet address",
-    { wallet_address: z.string().regex(/^0x[0-9a-fA-F]{40}$/, "Invalid EVM address") },
+    { wallet_address: z.string().regex(EVM_ADDRESS_RE, "Invalid EVM address") },
     async ({ wallet_address }) => {
       const humanOwnerNullifier = await lookupAgentBookOwner(wallet_address);
       const agentbook_status = humanOwnerNullifier ? "verified" : "offline";
