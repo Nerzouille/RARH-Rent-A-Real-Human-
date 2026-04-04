@@ -8,6 +8,9 @@
 
 import { agentKitHeaderSchema, AGENTKIT_HEADER_RE } from "@/lib/schemas";
 
+const WORLDCHAIN_MAINNET = "eip155:480";
+const WORLDCHAIN_PUBLIC_RPC = "https://worldchain-mainnet.g.alchemy.com/public";
+
 export interface AgentIdentity {
   walletAddress: string;
   humanOwnerNullifier: string | null;
@@ -69,10 +72,10 @@ export async function lookupAgentBookOwner(
   }
 
   try {
-    // Dynamic import — avoids build-time crash if SDK is incompatible with Next.js
-    const { AgentBook } = await import("@worldcoin/agentkit");
-    const agentBook = new AgentBook();
-    const res = await agentBook.getHumanOwner(normalizedWallet);
+    // Use the verifier API exposed by the installed AgentKit package.
+    const { createAgentBookVerifier } = await import("@worldcoin/agentkit");
+    const agentBook = createAgentBookVerifier({ rpcUrl: WORLDCHAIN_PUBLIC_RPC });
+    const res = await agentBook.lookupHuman(normalizedWallet, WORLDCHAIN_MAINNET);
     
     return {
       nullifier: res || null,

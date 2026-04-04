@@ -125,15 +125,16 @@ describe("lookupAgentBookOwner — mock mode", () => {
   });
 });
 
-describe("lookupAgentBookOwner — production mode (SDK unavailable)", () => {
-  it("returns offline status without throwing when SDK is not installed", async () => {
+describe("lookupAgentBookOwner — production mode", () => {
+  it("returns a fail-soft result without throwing when lookup cannot verify the wallet", async () => {
     vi.stubEnv("NEXT_PUBLIC_MOCK_WORLDID", "false");
     const { lookupAgentBookOwner } = await import("@/lib/core/agentkit");
 
-    // SDK not installed → dynamic import throws → fail-soft returns status: offline
+    // Production lookup is fail-soft: unresolved wallets return no nullifier and
+    // never throw, even if the verifier cannot confirm the registration.
     const result = await lookupAgentBookOwner(VALID_WALLET);
     expect(result.nullifier).toBeNull();
-    expect(result.status).toBe("offline");
+    expect(["not-registered", "offline"]).toContain(result.status);
   });
 });
 

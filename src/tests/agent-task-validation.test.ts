@@ -47,7 +47,7 @@ describe("get_task_status — ownership check", () => {
 
 describe("validate_task — guard conditions", () => {
   it("rejects validation when task status is not completed", () => {
-    const statuses = ["open", "claimed", "validated", "expired"] as const;
+    const statuses: string[] = ["open", "claimed", "validated", "expired"];
     for (const status of statuses) {
       const isValid = status === "completed";
       expect(isValid).toBe(false);

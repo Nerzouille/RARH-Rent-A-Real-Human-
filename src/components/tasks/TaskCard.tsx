@@ -40,7 +40,7 @@ export function TaskCard({ task }: { task: Task }) {
             </span>
           )}
           <span
-            className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[task.status] ?? "bg-zinc-100 text-zinc-600"}`}
+            className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusColors[task.status] ?? "bg-zinc-100 text-zinc-600"}`}
           >
             {task.status.toUpperCase()}
           </span>
