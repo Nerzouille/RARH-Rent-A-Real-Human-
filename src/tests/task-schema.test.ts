@@ -284,15 +284,4 @@ describe("task.validate input schema", () => {
   });
 });
 
-// ─── Integration stubs (require DB) ──────────────────────────────────────────
-describe("task tRPC router — integration stubs", () => {
-  it.todo("task.create — creates task with client_nullifier from session");
-  it.todo("task.claim — sets status=claimed and updated_at");
-  it.todo("task.claim — throws BAD_REQUEST if task is not open");
-  it.todo("task.markComplete — throws FORBIDDEN if not the assigned worker");
-  it.todo("task.validate — throws FORBIDDEN for agent tasks");
-  it.todo("task.validate — throws BAD_REQUEST if status is not completed");
-  it.todo("task.myTasks — returns only tasks for current worker");
-  it.todo("task.myPostedTasks — returns only tasks for current client");
-  it.todo("task.list — filters by status when provided");
-});
+// Integration tests moved to src/tests/task-router.test.ts

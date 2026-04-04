@@ -4,6 +4,7 @@ import path from "path";
 export default defineConfig({
   test: {
     environment: "node",
+    testTimeout: 15000,
     env: {
       SESSION_SECRET: "test-secret-1234567890abcdef",
     },
