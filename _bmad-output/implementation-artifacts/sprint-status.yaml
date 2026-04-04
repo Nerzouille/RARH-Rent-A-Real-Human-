@@ -58,7 +58,7 @@ development_status:
   2-1-agentkit-auth-middleware-and-registration: done
   2-2-agentbook-lookup-and-human-link-fail-soft: done
   2-3-agent-task-creation-api: review
-  2-4-visual-agent-identity-card: backlog
+  2-4-visual-agent-identity-card: done
   2-5-agent-task-status-polling-and-validation-api: backlog
   epic-2-retrospective: optional
 

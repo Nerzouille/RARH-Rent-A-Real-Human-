@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { SimulateDepositButton } from "@/components/simulate-deposit-button";
+import { AgentIdentityCard } from "@/components/AgentIdentityCard";
 
 export default function TasksPage() {
   const router = useRouter();
@@ -55,6 +56,25 @@ export default function TasksPage() {
         <p className="text-sm text-zinc-400">
           Available tasks will appear here once task listings are implemented (story 3.3).
         </p>
+
+        {/* Story 2.4 — Agent Identity Card demo (visible until story 3.3 wires real tasks) */}
+        <div className="w-full max-w-sm space-y-2">
+          <p className="text-xs text-zinc-400 text-left font-medium uppercase tracking-wide">
+            Agent Client Preview
+          </p>
+          <AgentIdentityCard
+            walletAddress="0xAria000000000000000000000000000000000001"
+            humanOwnerNullifier="mock-owner-nullifier-aria0000"
+            agentBookVerified={true}
+            agentBookStatus="verified"
+          />
+          <AgentIdentityCard
+            walletAddress="0xBot1111111111111111111111111111111111111"
+            humanOwnerNullifier={null}
+            agentBookVerified={false}
+            agentBookStatus="offline"
+          />
+        </div>
       </main>
     </div>
   );
