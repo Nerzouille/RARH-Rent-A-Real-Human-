@@ -22,8 +22,8 @@ export async function verifyWorldIDProof(
   // Mock mode for development — returns a deterministic nullifier from the input
   if (process.env.NEXT_PUBLIC_MOCK_WORLDID === "true") {
     const raw = JSON.stringify(idkitResponse ?? {});
-    const hash = Array.from(new TextEncoder().encode(raw))
-      .reduce((h, b) => ((h << 5) - h + b) | 0, 0)
+    const hash = (Array.from(new TextEncoder().encode(raw))
+      .reduce((h, b) => ((h << 5) - h + b) | 0, 0) >>> 0)
       .toString(16);
     return {
       nullifier: `mock-nullifier-${hash}`,

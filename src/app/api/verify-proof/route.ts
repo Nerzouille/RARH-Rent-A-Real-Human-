@@ -5,7 +5,15 @@ import { users, nullifiers } from "@/server/db/schema";
 import { createSession } from "@/lib/core/session";
 
 export async function POST(req: NextRequest) {
-  const { rp_id, idkit_response, role } = await req.json();
+  const body = await req.json();
+  const { rp_id, idkit_response, role } = body;
+
+  if (!rp_id || idkit_response === undefined) {
+    return NextResponse.json(
+      { error: "Missing required fields: rp_id, idkit_response" },
+      { status: 400 }
+    );
+  }
 
   try {
     const { nullifier } = await verifyWorldIDProof(rp_id, idkit_response);
