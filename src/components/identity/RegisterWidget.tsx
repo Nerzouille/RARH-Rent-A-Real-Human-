@@ -10,7 +10,13 @@ import { Button } from "@/components/ui/button";
 
 const isMock = process.env.NEXT_PUBLIC_MOCK_WORLDID === "true";
 
-export function RegisterWidget() {
+export function RegisterWidget({
+  role = "worker",
+  redirectTo = "/tasks",
+}: {
+  role?: "worker" | "client";
+  redirectTo?: string;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [rpContext, setRpContext] = useState<RpContext | null>(null);
@@ -72,9 +78,9 @@ export function RegisterWidget() {
         rp_id: "mock-rp-id",
         // Added Math.random() for better entropy in mock nullifier generation
         idkit_response: { mock: true, action: "register", timestamp: Date.now() + Math.random() },
-        role: "worker",
+        role,
       });
-      router.push("/tasks");
+      router.push(redirectTo);
     } catch (err) {
       handleRegisterError(err);
     }
@@ -104,7 +110,7 @@ export function RegisterWidget() {
       await registerMutation.mutateAsync({
         rp_id: rpContext.rp_id,
         idkit_response: result,
-        role: "worker",
+        role,
       });
     } catch (err) {
       handleRegisterError(err);
@@ -113,7 +119,7 @@ export function RegisterWidget() {
   }
 
   function onSuccess() {
-    router.push("/tasks");
+    router.push(redirectTo);
   }
 
   const appId = process.env.NEXT_PUBLIC_APP_ID;

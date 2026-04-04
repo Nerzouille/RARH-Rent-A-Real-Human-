@@ -133,6 +133,75 @@ describe("CreateTaskSchema — field completeness", () => {
   });
 });
 
+// ─── CreateTaskSchema — form validation edge cases (story 3.2) ───────────────
+describe("CreateTaskSchema — form validation edge cases", () => {
+  const validBase = {
+    title: "Pick up package",
+    description: "Collect from post office and photograph",
+    budget_hbar: 15,
+    deadline: new Date(Date.now() + 86400000).toISOString(), // tomorrow
+  };
+
+  it("rejects title shorter than 5 chars", () => {
+    const result = CreateTaskSchema.safeParse({ ...validBase, title: "Hi" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects title longer than 100 chars", () => {
+    const result = CreateTaskSchema.safeParse({
+      ...validBase,
+      title: "A".repeat(101),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects description shorter than 10 chars", () => {
+    const result = CreateTaskSchema.safeParse({
+      ...validBase,
+      description: "Too short",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects description longer than 1000 chars", () => {
+    const result = CreateTaskSchema.safeParse({
+      ...validBase,
+      description: "A".repeat(1001),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects budget_hbar of 0", () => {
+    const result = CreateTaskSchema.safeParse({ ...validBase, budget_hbar: 0 });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects negative budget_hbar", () => {
+    const result = CreateTaskSchema.safeParse({ ...validBase, budget_hbar: -5 });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects non-integer budget_hbar", () => {
+    const result = CreateTaskSchema.safeParse({ ...validBase, budget_hbar: 10.5 });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects deadline that is not a valid ISO datetime", () => {
+    const result = CreateTaskSchema.safeParse({ ...validBase, deadline: "2026-07-15" });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts minimum valid inputs", () => {
+    const result = CreateTaskSchema.safeParse({
+      title: "Hello",
+      description: "Ten chars!",
+      budget_hbar: 1,
+      deadline: new Date(Date.now() + 3600000).toISOString(),
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
 // ─── Integration stubs (require DB) ──────────────────────────────────────────
 describe("task tRPC router — integration stubs", () => {
   it.todo("task.create — creates task with client_nullifier from session");

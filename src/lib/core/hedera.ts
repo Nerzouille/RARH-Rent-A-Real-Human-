@@ -6,6 +6,8 @@ import {
   AccountBalanceQuery,
 } from "@hashgraph/sdk";
 
+const isMock = process.env.NEXT_PUBLIC_MOCK_WORLDID === "true";
+
 let clientInstance: Client | null = null;
 
 function validateEnv(): { accountId: string; privateKey: string } {
@@ -41,6 +43,7 @@ function getClient(): Client {
  * Returns the platform operator account ID without exposing private keys.
  */
 export function getOperatorAccountId(): string {
+  if (isMock) return "0.0.mock";
   const { accountId } = validateEnv();
   return accountId;
 }
@@ -68,6 +71,7 @@ export async function lockEscrow(
   taskId: string,
   clientNullifier?: string
 ): Promise<string> {
+  if (isMock) return `mock-escrow-${taskId}-${budgetHbar}hbar`;
   const client = getClient();
   const platformAccountId = getOperatorAccountId();
 
@@ -127,6 +131,7 @@ export async function simulateDeposit(
   amountHbar: number,
   recipientAccountId?: string | null
 ): Promise<string> {
+  if (isMock) return `mock-deposit-${amountHbar}hbar-${Date.now()}`;
   const client = getClient();
   const platformAccountId = getOperatorAccountId();
 
