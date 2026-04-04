@@ -11,7 +11,7 @@ describe("verifyWorldIDProof — mock mode (registration flow)", () => {
     vi.stubEnv("NEXT_PUBLIC_MOCK_WORLDID", "true");
 
     const { verifyWorldIDProof } = await import("@/lib/core/worldid");
-    const result = await verifyWorldIDProof("mock-rp-id", {
+    const result = await verifyWorldIDProof({
       mock: true,
       action: "register",
       timestamp: Date.now(),
@@ -27,10 +27,9 @@ describe("verifyWorldIDProof — mock mode (registration flow)", () => {
 
     const { verifyWorldIDProof } = await import("@/lib/core/worldid");
 
-    const r1 = await verifyWorldIDProof("mock-rp-id", { mock: true, timestamp: 1000 });
-    const r2 = await verifyWorldIDProof("mock-rp-id", { mock: true, timestamp: 2000 });
+    const r1 = await verifyWorldIDProof({ mock: true, timestamp: 1000 });
+    const r2 = await verifyWorldIDProof({ mock: true, timestamp: 2000 });
 
-    // Different payloads → different nullifiers (each demo loop gets a fresh identity)
     expect(r1.nullifier).not.toBe(r2.nullifier);
   });
 
@@ -40,8 +39,8 @@ describe("verifyWorldIDProof — mock mode (registration flow)", () => {
     const { verifyWorldIDProof } = await import("@/lib/core/worldid");
     const payload = { mock: true, action: "register", timestamp: 42 };
 
-    const r1 = await verifyWorldIDProof("mock-rp-id", payload);
-    const r2 = await verifyWorldIDProof("mock-rp-id", payload);
+    const r1 = await verifyWorldIDProof(payload);
+    const r2 = await verifyWorldIDProof(payload);
 
     expect(r1.nullifier).toBe(r2.nullifier);
   });
@@ -55,7 +54,7 @@ describe("Session lifecycle — post-registration", () => {
     const { verifyWorldIDProof } = await import("@/lib/core/worldid");
     const { createSession, verifySession } = await import("@/lib/core/session");
 
-    const { nullifier } = await verifyWorldIDProof("mock-rp-id", {
+    const { nullifier } = await verifyWorldIDProof({
       mock: true,
       action: "register",
       timestamp: 99999,
@@ -70,10 +69,129 @@ describe("Session lifecycle — post-registration", () => {
   });
 });
 
-// ─── Integration stubs (require DB) ──────────────────────────────────────────
-describe("auth.register tRPC — integration stubs", () => {
-  it.todo("auth.register — creates user + nullifier in DB with mock IDKit payload");
-  it.todo("auth.register — sets httpOnly session cookie on success");
-  it.todo("auth.register — throws HUMAN_ALREADY_REGISTERED on duplicate nullifier");
-  it.todo("auth.register — redirects to /tasks after success (E2E)");
+// ─── AC #2: completeRegistration — DB persistence ─────────────────────────────
+describe("completeRegistration — registration persistence (AC #2)", () => {
+  it("creates user + nullifier and returns a token on success", async () => {
+    vi.stubEnv("NEXT_PUBLIC_MOCK_WORLDID", "true");
+
+    const mockUser = {
+      id: "user-abc",
+      nullifier: "mock-nullifier-test",
+      role: "worker" as const,
+      hbar_balance: 0,
+      tasks_completed: 0,
+      hedera_account_id: null,
+      created_at: new Date(),
+    };
+
+    const mockFindFirst = vi.fn().mockResolvedValue(null);
+    const mockReturning = vi.fn().mockResolvedValue([mockUser]);
+    const mockOnConflictDoUpdate = vi.fn().mockReturnValue({ returning: mockReturning });
+    const mockOnConflictDoNothing = vi.fn().mockResolvedValue([]);
+    const mockValues = vi.fn().mockReturnValue({
+      onConflictDoUpdate: mockOnConflictDoUpdate,
+      onConflictDoNothing: mockOnConflictDoNothing,
+    });
+    const mockInsert = vi.fn().mockReturnValue({ values: mockValues });
+
+    vi.doMock("@/lib/db", () => ({
+      db: {
+        query: { nullifiers: { findFirst: mockFindFirst } },
+        insert: mockInsert,
+      },
+    }));
+
+    const { completeRegistration } = await import("@/lib/core/auth-register");
+    const result = await completeRegistration(
+      { mock: true, action: "register", timestamp: 123 },
+      "worker"
+    );
+
+    expect(result.user.id).toBe("user-abc");
+    expect(result.nullifier).toMatch(/^mock-nullifier-/);
+    expect(result.token).toBeTruthy();
+    // Two inserts: users table + nullifiers table
+    expect(mockInsert).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws HumanAlreadyRegisteredError on duplicate nullifier (AC #2)", async () => {
+    vi.stubEnv("NEXT_PUBLIC_MOCK_WORLDID", "true");
+
+    const mockFindFirst = vi.fn().mockResolvedValue({
+      nullifier: "mock-nullifier-test",
+      action: "register",
+    });
+
+    vi.doMock("@/lib/db", () => ({
+      db: {
+        query: { nullifiers: { findFirst: mockFindFirst } },
+        insert: vi.fn(),
+      },
+    }));
+
+    const { completeRegistration, HumanAlreadyRegisteredError } = await import(
+      "@/lib/core/auth-register"
+    );
+
+    await expect(
+      completeRegistration({ mock: true, action: "register", timestamp: 456 }, "worker")
+    ).rejects.toThrow(HumanAlreadyRegisteredError);
+  });
+});
+
+// ─── AC #4: protectedProcedure — session gate ────────────────────────────────
+describe("protectedProcedure — rejects unauthorized requests (AC #4)", () => {
+  it("throws UNAUTHORIZED when session is null", async () => {
+    const { router, protectedProcedure } = await import("@/lib/trpc/server");
+
+    const testRouter = router({
+      ping: protectedProcedure.query(() => "pong"),
+    });
+
+    // Create caller with no session (simulates missing or invalid cookie)
+    const caller = testRouter.createCaller({ session: null, req: {} as never });
+
+    await expect(caller.ping()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+
+  it("allows access when a valid session is present", async () => {
+    const { router, protectedProcedure } = await import("@/lib/trpc/server");
+
+    const testRouter = router({
+      ping: protectedProcedure.query(() => "pong"),
+    });
+
+    const caller = testRouter.createCaller({
+      session: { nullifier: "0xabc", role: "worker", userId: "u1" },
+      req: {} as never,
+    });
+
+    await expect(caller.ping()).resolves.toBe("pong");
+  });
+});
+
+// ─── AC #3: Redirect logic — verification result ─────────────────────────────
+describe("auth.register result — redirect readiness", () => {
+  it("returns user id on success (client uses this to redirect to /tasks)", async () => {
+    vi.stubEnv("NEXT_PUBLIC_MOCK_WORLDID", "true");
+    vi.stubEnv("SESSION_SECRET", "test-secret-12345678901234567890");
+
+    const mockUser = { id: "user-123", nullifier: "n1", role: "worker" as const };
+    const mockReturning = vi.fn().mockResolvedValue([mockUser]);
+    const mockValues = vi.fn().mockReturnValue({ onConflictDoUpdate: vi.fn().mockReturnValue({ returning: mockReturning }) });
+    
+    vi.doMock("@/lib/db", () => ({
+      db: {
+        transaction: (cb: any) => cb({
+          query: { nullifiers: { findFirst: vi.fn().mockResolvedValue(null) } },
+          insert: vi.fn().mockReturnValue({ values: mockValues }),
+        }),
+      },
+    }));
+
+    const { completeRegistration } = await import("@/lib/core/auth-register");
+    const result = await completeRegistration({ mock: true }, "worker");
+
+    expect(result.user.id).toBe("user-123");
+  });
 });

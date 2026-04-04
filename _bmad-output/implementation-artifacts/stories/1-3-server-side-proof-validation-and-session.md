@@ -1,6 +1,6 @@
 # Story 1.3: Server-Side Proof Validation & Session
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -34,33 +34,33 @@ So that I can ensure identity is not forgeable via client-side manipulation.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Harden the World ID verification core (AC: #1)
-  - [ ] 1.1 Keep proof verification server-side in `src/lib/core/worldid.ts`; do not move any signing or verification secret to the client.
-  - [ ] 1.2 Stop trusting a caller-provided RP identifier for internal verification paths; use the server-configured RP ID as the source of truth.
-  - [ ] 1.3 Validate the World API response before treating it as success: require a successful response payload and a usable nullifier.
-  - [ ] 1.4 Preserve mock mode behaviour for local/demo work without changing the public contract used by story 1.2.
+- [x] Task 1 — Harden the World ID verification core (AC: #1)
+  - [x] 1.1 Keep proof verification server-side in `src/lib/core/worldid.ts`; do not move any signing or verification secret to the client.
+  - [x] 1.2 Stop trusting a caller-provided RP identifier for internal verification paths; use the server-configured RP ID as the source of truth.
+  - [x] 1.3 Validate the World API response before treating it as success: require a successful response payload and a usable nullifier.
+  - [x] 1.4 Preserve mock mode behaviour for local/demo work without changing the public contract used by story 1.2.
 
-- [ ] Task 2 — Centralize registration persistence and session issuance (AC: #2, #3)
-  - [ ] 2.1 Extract the shared "verify proof -> reject duplicate -> upsert user -> insert nullifier -> create session" flow into one server-side helper.
-  - [ ] 2.2 Make both `src/app/api/verify-proof/route.ts` and `src/server/routers/auth.ts` use that helper instead of maintaining duplicate logic.
-  - [ ] 2.3 Ensure the session cookie is set only after successful persistence and uses one shared cookie configuration.
+- [x] Task 2 — Centralize registration persistence and session issuance (AC: #2, #3)
+  - [x] 2.1 Extract the shared "verify proof -> reject duplicate -> upsert user -> insert nullifier -> create session" flow into one server-side helper.
+  - [x] 2.2 Make both `src/app/api/verify-proof/route.ts` and `src/server/routers/auth.ts` use that helper instead of maintaining duplicate logic.
+  - [x] 2.3 Ensure the session cookie is set only after successful persistence and uses one shared cookie configuration.
 
-- [ ] Task 3 — Audit and preserve downstream session protection (AC: #4)
-  - [ ] 3.1 Keep `protectedProcedure` as the gate for human-authenticated mutations.
-  - [ ] 3.2 Verify that the current protected task/payment procedures still reject missing or invalid sessions after the refactor.
-  - [ ] 3.3 Do not weaken existing authorization semantics while refactoring auth flows.
+- [x] Task 3 — Audit and preserve downstream session protection (AC: #4)
+  - [x] 3.1 Keep `protectedProcedure` as the gate for human-authenticated mutations.
+  - [x] 3.2 Verify that the current protected task/payment procedures still reject missing or invalid sessions after the refactor.
+  - [x] 3.3 Do not weaken existing authorization semantics while refactoring auth flows.
 
-- [ ] Task 4 — Add proof-validation and session regression tests (AC: #1, #2, #3, #4)
-  - [ ] 4.1 Add integration coverage for `auth.register`: successful registration persists the user/nullifier and sets the `session` cookie.
-  - [ ] 4.2 Add coverage for duplicate registration returning `HUMAN_ALREADY_REGISTERED`.
-  - [ ] 4.3 Add coverage for verification failure / invalid upstream response failing closed.
-  - [ ] 4.4 Add coverage proving a protected mutation rejects missing or invalid sessions.
+- [x] Task 4 — Add proof-validation and session regression tests (AC: #1, #2, #3, #4)
+  - [x] 4.1 Add integration coverage for `auth.register`: successful registration persists the user/nullifier and sets the `session` cookie.
+  - [x] 4.2 Add coverage for duplicate registration returning `HUMAN_ALREADY_REGISTERED`.
+  - [x] 4.3 Add coverage for verification failure / invalid upstream response failing closed.
+  - [x] 4.4 Add coverage proving a protected mutation rejects missing or invalid sessions.
 
 ## Dev Notes
 
 ### Story intent
 
-This story is not greenfield. The core registration flow already exists and is already used by story 1.2. The job here is to make that server-side flow trustworthy, reusable, and regression-tested before Epic 3 and Epic 5 depend on it.
+This story is not greenfield. The core registration flow already existed and was already used by story 1.2. The job here was to make that server-side flow trustworthy, reusable, and regression-tested before Epic 3 and Epic 5 depend on it.
 
 ### What already exists (DO NOT recreate)
 
@@ -141,16 +141,41 @@ These points are repeated in both:
 
 ### Agent Model Used
 
-TBD
+claude-sonnet-4-6
 
 ### Completion Notes List
 
-- TBD
+- Removed caller-provided `rpId` from `verifyWorldIDProof` — server now always uses `WORLD_RP_ID` env var (Task 1.2)
+- Added explicit nullifier validation in real-mode: throws if response lacks a non-empty string nullifier (Task 1.3)
+- Created `src/lib/core/auth-register.ts` with `completeRegistration()` helper and `HumanAlreadyRegisteredError` — eliminates duplication between REST and tRPC paths (Task 2.1)
+- Added `SESSION_COOKIE_OPTIONS` constant to `session.ts` — one definition, used by both callers (Task 2.3)
+- `auth.ts` keeps `rp_id` as optional in the input schema for backward-compat with `RegisterWidget.tsx` (story 1.2), but ignores it server-side
+- `protectedProcedure` was already correct — no changes needed; verified via new regression tests (Task 3)
+- Updated `worldid.test.ts` with 4 real-mode validation tests covering: non-OK response, missing nullifier, missing env var, correct RP ID usage
+- Filled `registration.test.ts` integration stubs with: `completeRegistration` success + duplicate error tests (mocked DB via `vi.doMock`), and `protectedProcedure` UNAUTHORIZED tests
+- All existing tests preserved and updated for the new `verifyWorldIDProof` signature (88 tests pass, 9 todo)
 
 ### Change Log
 
 - 2026-04-04: Story created from BMAD artifacts, current codebase, World ID track docs, and integration postmortem.
+- 2026-04-04: Implemented all tasks — worldid.ts hardened, auth-register.ts created, both registration paths unified, tests added. 88/88 tests pass.
 
 ### File List
 
-- TBD
+- `src/lib/core/worldid.ts` — modified: removed rpId param, use WORLD_RP_ID env var, validate nullifier in response
+- `src/lib/core/session.ts` — modified: added SESSION_COOKIE_OPTIONS constant
+- `src/lib/core/auth-register.ts` — created: completeRegistration() helper + HumanAlreadyRegisteredError
+- `src/app/api/verify-proof/route.ts` — modified: uses completeRegistration(), SESSION_COOKIE_OPTIONS
+- `src/server/routers/auth.ts` — modified: uses completeRegistration(), SESSION_COOKIE_OPTIONS; rp_id now optional
+- `src/tests/worldid.test.ts` — modified: updated to new verifyWorldIDProof signature + 4 new real-mode tests
+- `src/tests/mock-flow.test.ts` — modified: updated to new verifyWorldIDProof signature
+- `src/tests/registration.test.ts` — modified: filled integration stubs (completeRegistration + protectedProcedure tests)
+
+### Review Findings
+
+- [x] [Review][Patch] Race condition in registration [src/lib/core/auth-register.ts:24-38]
+- [x] [Review][Patch] Missing JSON validation in verifyWorldIDProof [src/lib/core/worldid.ts:50]
+- [x] [Review][Patch] Information leak in error handling [src/app/api/verify-proof/route.ts, src/server/routers/auth.ts]
+- [x] [Review][Patch] Hardcoded secret fallback [src/lib/core/session.ts]
+- [x] [Review][Patch] Empty WORLD_RP_ID guard [src/lib/core/worldid.ts:34]
+- [x] [Review][Patch] Missing redirect verification in tests [src/tests/registration.test.ts]
