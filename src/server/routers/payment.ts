@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "@/lib/trpc/server";
 import { db } from "@/lib/db";
 import { tasks, users } from "@/server/db/schema";
-import { lockEscrow, releasePayment, simulateDeposit, hashscanUrl } from "@/lib/core/hedera";
+import { lockEscrow, releasePayment, simulateDeposit, hashscanUrl, getAccountBalance, getOperatorAccountId } from "@/lib/core/hedera";
 import { eq } from "drizzle-orm";
 
 export const paymentRouter = router({
@@ -91,5 +92,17 @@ export const paymentRouter = router({
       where: (u, { eq }) => eq(u.nullifier, ctx.session.nullifier),
     });
     return { balance: user?.hbar_balance ?? 0 };
+  }),
+
+  // Get platform operator account balance (admin/demo use)
+  getPlatformBalance: protectedProcedure.query(async ({ ctx }) => {
+    const user = await db.query.users.findFirst({
+      where: (u, { eq }) => eq(u.nullifier, ctx.session.nullifier),
+    });
+    if (user?.role !== "admin") {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+    }
+    const balance = await getAccountBalance();
+    return { accountId: getOperatorAccountId(), balance };
   }),
 });

@@ -3,17 +3,64 @@ import {
   PrivateKey,
   TransferTransaction,
   Hbar,
-  AccountId,
+  AccountBalanceQuery,
 } from "@hashgraph/sdk";
 
-function getClient() {
-  const accountId = process.env.HEDERA_ACCOUNT_ID!;
-  const privateKey = process.env.HEDERA_PRIVATE_KEY!;
+let clientInstance: Client | null = null;
 
-  return Client.forTestnet().setOperator(
+function validateEnv(): { accountId: string; privateKey: string } {
+  const accountId = process.env.HEDERA_ACCOUNT_ID;
+  const privateKey = process.env.HEDERA_PRIVATE_KEY;
+
+  if (!accountId) {
+    throw new Error("HEDERA_ACCOUNT_ID is not set. Configure it in .env.local");
+  }
+  if (!/^\d+\.\d+\.\d+$/.test(accountId)) {
+    throw new Error(`Invalid HEDERA_ACCOUNT_ID format: ${accountId}. Expected 0.0.x`);
+  }
+  if (!privateKey) {
+    throw new Error("HEDERA_PRIVATE_KEY is not set. Configure it in .env.local");
+  }
+
+  return { accountId, privateKey };
+}
+
+function getClient(): Client {
+  if (clientInstance) return clientInstance;
+
+  const { accountId, privateKey } = validateEnv();
+  clientInstance = Client.forTestnet().setOperator(
     accountId,
     PrivateKey.fromStringECDSA(privateKey)
   );
+
+  return clientInstance;
+}
+
+/**
+ * Returns the platform operator account ID without exposing private keys.
+ */
+export function getOperatorAccountId(): string {
+  const { accountId } = validateEnv();
+  return accountId;
+}
+
+/**
+ * Queries the platform operator account's HBAR balance on Hedera Testnet.
+ */
+export async function getAccountBalance(): Promise<number> {
+  try {
+    const client = getClient();
+
+    const balance = await new AccountBalanceQuery()
+      .setAccountId(getOperatorAccountId())
+      .execute(client);
+
+    return balance.hbars.toBigNumber().toNumber();
+  } catch (error) {
+    console.error("Hedera balance query failed:", error);
+    throw new Error("Failed to query Hedera account balance. Check network or configuration.");
+  }
 }
 
 export async function lockEscrow(

@@ -36,6 +36,8 @@
 
 generated: 2026-04-04
 last_updated: 2026-04-04T17:00:00Z
+
+
 project: RARH-Rent-A-Real-Human-
 project_key: NOKEY
 tracking_system: file-system
@@ -45,7 +47,7 @@ development_status:
   # Epic 1: Identity & Human Verification (World ID Bounty)
   epic-1: in-progress
   1-1-setup-world-id-staging-and-mock-mode: done
-  1-2-worker-registration-with-idkit-widget: backlog
+  1-2-worker-registration-with-idkit-widget: done
   1-3-server-side-proof-validation-and-session: backlog
   1-4-user-profile-and-verification-badge: backlog
   1-5-judge-friendly-error-handling-demo: backlog
@@ -62,7 +64,7 @@ development_status:
 
   # Epic 3: Task Marketplace & Lifecycle
   epic-3: in-progress
-  3-1-database-schema-for-tasks: review
+  3-1-database-schema-for-tasks: done
   3-2-human-client-task-creation-ui: backlog
   3-3-unified-task-list-view-agent-human-distinction: backlog
   3-4-task-claim-flow-nullifier-check: backlog
@@ -70,8 +72,8 @@ development_status:
   epic-3-retrospective: optional
 
   # Epic 4: Agentic Payments & Escrow (Hedera Bounty)
-  epic-4: backlog
-  4-1-hedera-testnet-account-and-server-side-security: backlog
+  epic-4: in-progress
+  4-1-hedera-testnet-account-and-server-side-security: done
   4-2-simulate-deposit-flow-demo-robustness: backlog
   4-3-hedera-escrow-lock-on-task-creation: backlog
   4-4-hedera-payment-release-on-validation: backlog
