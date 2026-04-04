@@ -91,3 +91,11 @@ Claude Sonnet 4.6
 - `src/components/identity/HumanVerifiedBadge.tsx` — New: full card + compact pill variants
 - `src/app/profile/page.tsx` — New: protected profile page
 - `src/app/tasks/page.tsx` — Updated: compact badge + "My profile" link in header
+
+### Review Findings
+
+- [ ] [Review][Decision] Profile Server vs Client — La spec exige un fetch "server-side" (AC 2), mais l'implémentation actuelle utilise un Client Component avec tRPC.
+- [ ] [Review][Patch] Données Hardcodées dans le Header [src/app/tasks/page.tsx] — Les stats passées au badge sont forcées à 0.
+- [ ] [Review][Patch] Badge Compact Incomplet [src/components/identity/HumanVerifiedBadge.tsx] — Le mode compact n'affiche ni le nullifier ni les balances (requis par AC 1).
+- [ ] [Review][Patch] Risque de Crash : truncate non sécurisé [src/components/identity/HumanVerifiedBadge.tsx:9] — Pas de vérification de présence de la chaîne avant le slice.
+- [x] [Review][Defer] Redirection Client (Flash UI) [src/app/profile/page.tsx] — flash du contenu avant redirection. deferred, pre-existing

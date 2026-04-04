@@ -81,3 +81,8 @@ Claude Sonnet 4.6
 - `src/server/routers/auth.ts` — Updated: `auth.adminReset` mutation, `tasks`/`nullifiers` imports
 - `src/components/identity/AlreadyRegisteredPanel.tsx` — New: error panel with reset flow
 - `src/components/identity/RegisterWidget.tsx` — Updated: alreadyRegistered state, panel render
+
+### Review Findings
+
+- [ ] [Review][Patch] Faille Critique : Reset Admin non authentifié [src/server/routers/auth.ts:31] — Aucune validation de clé envoyée par le client.
+- [ ] [Review][Patch] Ordre de Suppression DB Dangereux [src/server/routers/auth.ts:38] — Risque d'erreur de contrainte FK si des tâches sont liées aux utilisateurs.
