@@ -2,8 +2,10 @@
  * MCP Tool Registry — entry point for agent clients (Epic 2).
  * Pierre owns the tool implementations in ./tools/
  *
- * Architecture: agents connect via SSE at /api/mcp
- * Auth: AgentKit signature validated at handshake (Story 2.1)
+ * Register all MCP tools on a McpServer instance.
+ * Called by app/api/[transport]/route.ts via mcp-handler.
+ *
+ * Auth: AgentKit signature validated upstream in the route handler (Story 2.1)
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -12,12 +14,7 @@ import { db } from "@/lib/db";
 import { tasks } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
-export function createMcpServer(): McpServer {
-  const server = new McpServer({
-    name: "humanproof",
-    version: "0.1.0",
-  });
-
+export function registerTools(server: McpServer): void {
   // ─── Identity Tool ──────────────────────────────────────────────────────────
   server.tool(
     "get_identity",
@@ -56,7 +53,7 @@ export function createMcpServer(): McpServer {
       deadline: z.string().datetime(),
     },
     async (input) => {
-      // TODO (Pierre - Story 2.3): validate AgentKit auth from session context
+      // TODO (Pierre - Story 2.3): attach agent wallet from auth context
       const [task] = await db
         .insert(tasks)
         .values({
@@ -109,6 +106,4 @@ export function createMcpServer(): McpServer {
       };
     }
   );
-
-  return server;
 }
