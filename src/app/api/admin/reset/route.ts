@@ -16,6 +16,10 @@ export async function POST(req: NextRequest) {
   await db.delete(tasks);
   await db.delete(users);
 
+  // Clear session cookie to avoid ghost sessions
+  const cookieStore = await cookies();
+  cookieStore.delete("session");
+
   let seeded: { users: number; tasks: number } | null = null;
   if (shouldSeed) {
     seeded = await runSeed(db);

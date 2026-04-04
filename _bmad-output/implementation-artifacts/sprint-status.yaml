@@ -82,8 +82,8 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: Hackathon Demo & Operations
-  epic-5: in-progress
-  5-1-visual-audit-trail-for-proofs-identity-agent-hedera: review
-  5-2-judges-dashboard-for-fast-switching: review
-  5-3-admin-reset-and-debug-route-looping-demo: review
+  epic-5: done
+  5-1-visual-audit-trail-for-proofs-identity-agent-hedera: done
+  5-2-judges-dashboard-for-fast-switching: done
+  5-3-admin-reset-and-debug-route-looping-demo: done
   epic-5-retrospective: optional

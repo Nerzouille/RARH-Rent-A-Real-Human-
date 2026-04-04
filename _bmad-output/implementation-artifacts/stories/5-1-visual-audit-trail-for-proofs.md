@@ -1,6 +1,6 @@
 # Story 5.1: Visual Audit Trail for Proofs (Identity, Agent, Hedera)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -57,3 +57,9 @@ So that I can prove the underlying protocol integrations to judges without readi
 
 - [x] Task 3: Update sprint status
   - [x] 3.1 Set story 5.1 to `review` and epic-5 to `in-progress` in sprint-status.yaml
+
+### Review Findings
+
+- [x] [Review][Patch] Missing import for hashscanUrl in TaskDetailPage
+- [x] [Review][Patch] Potential runtime crash if task is null in TaskDetailPage
+- [x] [Review][Defer] Hashscan link validation for mock IDs — deferred, pre-existing

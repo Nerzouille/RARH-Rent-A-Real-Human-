@@ -11,15 +11,25 @@ interface AlreadyRegisteredPanelProps {
 
 export function AlreadyRegisteredPanel({ onReset }: AlreadyRegisteredPanelProps) {
   const [resetDone, setResetDone] = useState(false);
+  const [adminKey, setAdminKey] = useState("");
+
   const resetMutation = trpc.auth.adminReset.useMutation({
     onSuccess: () => {
       setResetDone(true);
       toast.success("Database reset. Ready for next judge!");
     },
-    onError: () => {
-      toast.error("Reset failed — check ADMIN_RESET_KEY in .env.local");
+    onError: (err) => {
+      toast.error(err.message || "Reset failed — check ADMIN_RESET_KEY in .env.local");
     },
   });
+
+  const handleReset = () => {
+    if (!adminKey) {
+      toast.error("Please enter the admin reset key");
+      return;
+    }
+    resetMutation.mutate({ key: adminKey });
+  };
 
   if (resetDone) {
     return (
@@ -74,10 +84,17 @@ export function AlreadyRegisteredPanel({ onReset }: AlreadyRegisteredPanelProps)
         <p className="text-sm text-zinc-600 dark:text-zinc-300">
           Reset the database to let the next judge register fresh.
         </p>
+        <input
+          type="password"
+          placeholder="Admin reset key"
+          className="w-full rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+          value={adminKey}
+          onChange={(e) => setAdminKey(e.target.value)}
+        />
         <Button
           variant="destructive"
           size="sm"
-          onClick={() => resetMutation.mutate()}
+          onClick={handleReset}
           disabled={resetMutation.isPending}
           className="w-full mt-1"
         >

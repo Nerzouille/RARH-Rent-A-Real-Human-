@@ -1,6 +1,6 @@
 # Story 5.3: /admin Reset & Debug Route (Looping Demo)
 
-**Status:** ready-for-dev
+**Status:** done
 **Epic:** 5 — Hackathon Demo & Operations
 **Depends on:** Story 1.3 (session)
 
@@ -126,3 +126,9 @@ Client component. Uses `fetch` directly (no tRPC needed).
 - [ ] `/admin` page renders with two action buttons
 - [ ] Both buttons show loading state and toast on success/error
 - [ ] Works with `NEXT_PUBLIC_ADMIN_RESET_KEY=dev-reset-key`
+
+### Review Findings
+
+- [x] [Review][Patch] adminReset tRPC mutation lacks authorization — FIXED: added key check
+- [x] [Review][Patch] Missing destructive action confirmation — FIXED: added window.confirm
+- [x] [Review][Patch] NEXT_PUBLIC_ exposure of admin key — FIXED: removed exposure

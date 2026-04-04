@@ -150,3 +150,12 @@ Claude Opus 4.6
 - src/app/judges/page.tsx (new)
 - src/tests/judges-switch.test.ts (new)
 - .env.example (modified)
+
+### Review Findings
+
+- [x] [Review][Patch] Critical Exposure of Admin Credentials (NEXT_PUBLIC_) — FIXED: removed exposure, added key input
+- [x] [Review][Patch] Server Deadlock Risk (self-fetch) — FIXED: direct tool call
+- [x] [Review][Patch] Mismatch in Escrow TX ID field name (toast) — FIXED: mapped taskId and escrowTxId
+- [x] [Review][Patch] Ghost sessions after reset — FIXED: clear cookie on reset
+- [x] [Review][Patch] Kenji-worker seeded with 0 HBAR — FIXED: seeded with 50 HBAR
+- [x] [Review][Defer] Incomplete MCP error handling (JSON parsing) — deferred, architectural

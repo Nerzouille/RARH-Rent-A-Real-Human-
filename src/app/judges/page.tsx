@@ -120,13 +120,27 @@ export default function JudgesDashboard() {
         </div>
 
         {/* Current session */}
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 text-center">
-          <span className="text-xs uppercase tracking-wider text-zinc-400">Current Session</span>
-          <p className="mt-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {me.data
-              ? `${me.data.role} (${me.data.nullifier.slice(0, 20)}...)`
-              : "No session"}
-          </p>
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 space-y-4">
+          <div className="text-center">
+            <span className="text-xs uppercase tracking-wider text-zinc-400">Current Session</span>
+            <p className="mt-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              {me.data
+                ? `${me.data.role} (${me.data.nullifier.slice(0, 20)}...)`
+                : "No session"}
+            </p>
+          </div>
+          <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4">
+            <label className="block text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-2 text-center">
+              Authorization
+            </label>
+            <input
+              type="password"
+              placeholder="Enter ADMIN_RESET_KEY"
+              className="w-full rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-black px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-center"
+              value={adminKey}
+              onChange={(e) => setAdminKey(e.target.value)}
+            />
+          </div>
         </div>
 
         {/* Persona cards */}

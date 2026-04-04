@@ -32,16 +32,27 @@ export const authRouter = router({
 
   // Demo operator reset — deletes all data so judges can re-register fresh.
   // Admin key stays server-side only.
-  adminReset: publicProcedure.mutation(async () => {
-    const key = process.env.ADMIN_RESET_KEY;
-    if (!key) {
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "ADMIN_RESET_KEY not configured" });
-    }
-    await db.delete(nullifiers);
-    await db.delete(tasks);
-    await db.delete(users);
-    return { success: true, message: "Platform reset. Ready for next judge." };
-  }),
+  adminReset: publicProcedure
+    .input(z.object({ key: z.string() }))
+    .mutation(async ({ input }) => {
+      const key = process.env.ADMIN_RESET_KEY;
+      if (!key) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "ADMIN_RESET_KEY not configured" });
+      }
+      if (input.key !== key) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid admin key" });
+      }
+
+      await db.delete(nullifiers);
+      await db.delete(tasks);
+      await db.delete(users);
+
+      // Clear current session cookie to avoid "ghost sessions"
+      const cookieStore = await cookies();
+      cookieStore.delete("session");
+
+      return { success: true, message: "Platform reset. Ready for next judge." };
+    }),
 
   register: publicProcedure
     .input(
