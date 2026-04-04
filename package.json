@@ -13,7 +13,10 @@
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:seed": "tsx server/db/seed.ts",
+    "db:reset": "docker compose down -v && docker compose up -d postgres && sleep 2 && drizzle-kit push && tsx server/db/seed.ts",
+    "db:studio": "drizzle-kit studio",
+    "dev:full": "pnpm db:up && pnpm db:push && next dev --turbopack"
   },
   "packageManager": "pnpm@10.33.0",
   "dependencies": {

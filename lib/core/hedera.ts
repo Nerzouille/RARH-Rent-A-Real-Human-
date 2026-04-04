@@ -81,6 +81,6 @@ export async function simulateDeposit(
 
 export function hashscanUrl(txId: string): string {
   // Hedera TX IDs use @ separator on Hashscan
-  const formatted = txId.replace("@", "-").replace(".", "-");
+  const formatted = txId.replace("@", "-");
   return `https://hashscan.io/testnet/transaction/${formatted}`;
 }

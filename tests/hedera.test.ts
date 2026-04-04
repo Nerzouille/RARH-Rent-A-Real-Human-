@@ -2,11 +2,10 @@ import { describe, it, expect } from "vitest";
 import { hashscanUrl } from "@/lib/core/hedera";
 
 describe("hashscanUrl", () => {
-  it("replaces @ with - and the first . with -", () => {
-    // Implementation does: replace("@", "-").replace(".", "-") — only first . is replaced
+  it("replaces @ with - and preserves all dots", () => {
     const url = hashscanUrl("0.0.12345@1234567890.123456789");
     expect(url).toBe(
-      "https://hashscan.io/testnet/transaction/0-0.12345-1234567890.123456789"
+      "https://hashscan.io/testnet/transaction/0.0.12345-1234567890.123456789"
     );
   });
 
