@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { router, publicProcedure, protectedProcedure } from "@/lib/trpc/server";
 import { TRPCError } from "@trpc/server";
 import { db } from "@/lib/db";
-import { users } from "@/server/db/schema";
+import { users, tasks, nullifiers } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { completeRegistration, HumanAlreadyRegisteredError } from "@/lib/core/auth-register";
 import { SESSION_COOKIE_OPTIONS } from "@/lib/core/session";
@@ -28,6 +28,19 @@ export const authRouter = router({
       hbarBalance: user.hbar_balance,
       hederaAccountId: user.hedera_account_id,
     };
+  }),
+
+  // Demo operator reset — deletes all data so judges can re-register fresh.
+  // Admin key stays server-side only.
+  adminReset: publicProcedure.mutation(async () => {
+    const key = process.env.ADMIN_RESET_KEY;
+    if (!key) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "ADMIN_RESET_KEY not configured" });
+    }
+    await db.delete(nullifiers);
+    await db.delete(tasks);
+    await db.delete(users);
+    return { success: true, message: "Platform reset. Ready for next judge." };
   }),
 
   register: publicProcedure

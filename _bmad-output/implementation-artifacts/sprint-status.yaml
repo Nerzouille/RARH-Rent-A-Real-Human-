@@ -50,7 +50,7 @@ development_status:
   1-2-worker-registration-with-idkit-widget: done
   1-3-server-side-proof-validation-and-session: done
   1-4-user-profile-and-verification-badge: done
-  1-5-judge-friendly-error-handling-demo: backlog
+  1-5-judge-friendly-error-handling-demo: done
   epic-1-retrospective: optional
 
   # Epic 2: Autonomous Agent Integration (World AgentKit Bounty)

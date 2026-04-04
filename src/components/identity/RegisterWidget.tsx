@@ -7,6 +7,7 @@ import type { IDKitResult, RpContext } from "@worldcoin/idkit";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc/client";
 import { Button } from "@/components/ui/button";
+import { AlreadyRegisteredPanel } from "@/components/identity/AlreadyRegisteredPanel";
 
 const isMock = process.env.NEXT_PUBLIC_MOCK_WORLDID === "true";
 
@@ -23,6 +24,7 @@ export function RegisterWidget({
   const [fetchError, setFetchError] = useState(false);
 
   const registerMutation = trpc.auth.register.useMutation();
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
 
   // Fetch RP context for staging/prod widget (not needed in mock mode)
   useEffect(() => {
@@ -57,14 +59,13 @@ export function RegisterWidget({
 
   // ─── Error helper ───────────────────────────────────────────────────────────
   function handleRegisterError(err: unknown) {
-    // Improved error detection for tRPC
     const errorMessage =
       err && typeof err === "object" && "message" in err
         ? (err as { message: string }).message
         : "";
 
     if (errorMessage === "HUMAN_ALREADY_REGISTERED") {
-      toast.error("This World ID is already registered.");
+      setAlreadyRegistered(true);
       return;
     }
 
@@ -84,6 +85,10 @@ export function RegisterWidget({
     } catch (err) {
       handleRegisterError(err);
     }
+  }
+
+  if (alreadyRegistered) {
+    return <AlreadyRegisteredPanel onReset={() => setAlreadyRegistered(false)} />;
   }
 
   if (isMock) {
