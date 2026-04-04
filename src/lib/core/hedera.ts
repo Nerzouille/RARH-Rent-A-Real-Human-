@@ -108,26 +108,46 @@ export async function releasePayment(
   return response.transactionId.toString();
 }
 
+/**
+ * Simulates an HBAR deposit via a real Hedera transfer.
+ * If recipientAccountId is provided, transfers from platform to recipient.
+ * If null/undefined (demo mode), does a self-transfer on the platform account with a memo.
+ */
 export async function simulateDeposit(
-  recipientAccountId: string,
-  amountHbar: number
+  amountHbar: number,
+  recipientAccountId?: string | null
 ): Promise<string> {
   const client = getClient();
-  const platformAccountId = process.env.HEDERA_ACCOUNT_ID!;
+  const platformAccountId = getOperatorAccountId();
 
-  const tx = new TransferTransaction()
-    .addHbarTransfer(platformAccountId, new Hbar(-amountHbar))
-    .addHbarTransfer(recipientAccountId, new Hbar(amountHbar))
-    .setTransactionMemo(`simulate-deposit:${amountHbar}HBAR`);
+  const tx = new TransferTransaction();
+
+  if (recipientAccountId) {
+    tx.addHbarTransfer(platformAccountId, new Hbar(-amountHbar))
+      .addHbarTransfer(recipientAccountId, new Hbar(amountHbar))
+      .setTransactionMemo(`simulate-deposit:${amountHbar}HBAR`);
+  } else {
+    tx.addHbarTransfer(platformAccountId, new Hbar(0))
+      .setTransactionMemo(`simulate-deposit:demo:${amountHbar}HBAR`);
+  }
 
   const response = await tx.execute(client);
-  await response.getReceipt(client);
+  const receipt = await response.getReceipt(client);
+
+  if (receipt.status.toString() !== "SUCCESS") {
+    throw new Error(`Hedera simulate-deposit failed: ${receipt.status}`);
+  }
 
   return response.transactionId.toString();
 }
 
 export function hashscanUrl(txId: string): string {
-  // Hedera TX IDs use @ separator on Hashscan
-  const formatted = txId.replace("@", "-");
+  // Hedera TX ID format: 0.0.X@seconds.nanos → Hashscan expects 0.0.X-seconds-nanos
+  // Only replace the @ and the dot between seconds.nanos (after @), not dots in account ID
+  const [accountPart, timestampPart] = txId.split("@");
+  if (!timestampPart) {
+    return `https://hashscan.io/testnet/transaction/${txId}`;
+  }
+  const formatted = `${accountPart}-${timestampPart.replace(".", "-")}`;
   return `https://hashscan.io/testnet/transaction/${formatted}`;
 }

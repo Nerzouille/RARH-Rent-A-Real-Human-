@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-04
-last_updated: 2026-04-04T18:10:00Z
+last_updated: 2026-04-04T20:00:00Z
 
 
 project: RARH-Rent-A-Real-Human-
@@ -74,7 +74,7 @@ development_status:
   # Epic 4: Agentic Payments & Escrow (Hedera Bounty)
   epic-4: in-progress
   4-1-hedera-testnet-account-and-server-side-security: done
-  4-2-simulate-deposit-flow-demo-robustness: backlog
+  4-2-simulate-deposit-flow-demo-robustness: done
   4-3-hedera-escrow-lock-on-task-creation: backlog
   4-4-hedera-payment-release-on-validation: backlog
   4-5-processing-ui-with-hashscan-links: backlog

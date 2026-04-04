@@ -4,7 +4,7 @@ import { router, protectedProcedure } from "@/lib/trpc/server";
 import { db } from "@/lib/db";
 import { tasks, users } from "@/server/db/schema";
 import { lockEscrow, releasePayment, simulateDeposit, hashscanUrl, getAccountBalance, getOperatorAccountId } from "@/lib/core/hedera";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export const paymentRouter = router({
   // Simulate HBAR deposit for demo
@@ -15,18 +15,33 @@ export const paymentRouter = router({
         where: (u, { eq }) => eq(u.nullifier, ctx.session.nullifier),
       });
 
-      if (!user?.hedera_account_id) {
-        throw new Error("No Hedera account linked to this profile");
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       }
 
-      const txId = await simulateDeposit(user.hedera_account_id, input.amount_hbar);
+      // Execute Hedera TX first — DB update only after confirmed SUCCESS
+      let txId: string;
+      try {
+        txId = await simulateDeposit(input.amount_hbar, user.hedera_account_id);
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Hedera deposit failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        });
+      }
 
+      // Only update DB after Hedera TX confirmed — use SQL increment to avoid TOCTOU race
       await db
         .update(users)
-        .set({ hbar_balance: (user.hbar_balance ?? 0) + input.amount_hbar })
+        .set({ hbar_balance: sql`${users.hbar_balance} + ${input.amount_hbar}` })
         .where(eq(users.id, user.id));
 
-      return { txId, hashscanLink: hashscanUrl(txId), newBalance: (user.hbar_balance ?? 0) + input.amount_hbar };
+      const updated = await db.query.users.findFirst({
+        where: (u, { eq }) => eq(u.id, user.id),
+        columns: { hbar_balance: true },
+      });
+
+      return { txId, hashscanLink: hashscanUrl(txId), newBalance: updated?.hbar_balance ?? input.amount_hbar };
     }),
 
   // Lock escrow when task is created

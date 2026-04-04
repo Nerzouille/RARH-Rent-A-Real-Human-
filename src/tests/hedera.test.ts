@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 import { hashscanUrl, getOperatorAccountId } from "@/lib/core/hedera";
 
 describe("hashscanUrl", () => {
-  it("replaces @ with - and preserves all dots", () => {
+  it("replaces @ with - and dot between seconds.nanos with -", () => {
     const url = hashscanUrl("0.0.12345@1234567890.123456789");
     expect(url).toBe(
-      "https://hashscan.io/testnet/transaction/0.0.12345-1234567890.123456789"
+      "https://hashscan.io/testnet/transaction/0.0.12345-1234567890-123456789"
     );
   });
 
