@@ -1,4 +1,7 @@
-import { LandingButtons } from "@/components/identity/LandingButtons";
+import Link from "next/link";
+
+import { buttonVariants } from "@/components/ui/button-variants";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   return (
@@ -20,7 +23,23 @@ export default function Home() {
           </p>
         </div>
 
-        <LandingButtons />
+        <div className="flex w-full flex-col justify-center gap-4 sm:flex-row">
+          <Link
+            href="/register"
+            className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto")}
+          >
+            Register as Worker
+          </Link>
+          <Link
+            href="/tasks"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "lg" }),
+              "w-full sm:w-auto"
+            )}
+          >
+            Browse Tasks
+          </Link>
+        </div>
 
         <div className="grid grid-cols-3 gap-6 mt-4 text-sm text-zinc-500 dark:text-zinc-400">
           <div className="flex flex-col items-center gap-1">

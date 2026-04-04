@@ -1,6 +1,6 @@
 # Story 1.2: Worker Registration with IDKit Widget
 
-Status: review
+Status: done
 
 ## Story
 
@@ -74,7 +74,7 @@ All backend for this story is already implemented. **Your job is to build the UI
 | `src/server/routers/auth.ts` | ✅ Done | `auth.register` tRPC mutation — verifies proof, inserts user+nullifier, sets httpOnly cookie |
 | `src/lib/core/worldid.ts` | ✅ Done | `verifyWorldIDProof()` with deterministic mock mode |
 | `src/lib/core/session.ts` | ✅ Done | JWT session creation |
-| `src/components/ui/button.tsx` | ✅ Done | shadcn Button |
+| `src/components/ui/button.tsx" | ✅ Done | shadcn Button |
 | `src/components/layout/providers.tsx` | ✅ Done | tRPC + React Query providers |
 | `src/lib/trpc/client.ts` | ✅ Done | `trpc` client with `AppRouter` type |
 
@@ -183,7 +183,7 @@ All new files go under `src/`:
 - `src/app/page.tsx` — **Modified** (replaced placeholder)
 - `src/app/register/page.tsx` — **New** (Server Component wrapper)
 - `src/components/identity/RegisterWidget.tsx` — **New** (Client Component)
-- `src/app/tasks/page.tsx` — **New** (stub)
+- `src/app/tasks/page.tsx" — **New** (stub)
 - `src/tests/registration.test.ts` — **New** (integration tests)
 
 ### Architecture compliance
@@ -251,6 +251,22 @@ Claude Sonnet 4.6
 - `src/app/page.tsx` — Modified: replaced Next.js placeholder with HumanProof landing page
 - `src/app/register/page.tsx` — New: worker registration page (Server Component)
 - `src/components/identity/LandingButtons.tsx` — New: CTA buttons Client Component (server/client boundary)
-- `src/components/identity/RegisterWidget.tsx` — New: IDKit widget Client Component (mock + staging modes)
+- `src/components/identity/RegisterWidget.tsx" — New: IDKit widget Client Component (mock + staging modes)
 - `src/app/tasks/page.tsx` — New: task marketplace stub page
 - `src/tests/registration.test.ts` — New: mock mode registration unit tests + integration stubs
+
+### Review Findings
+
+- [x] [Review][Decision] Navigation Intermédiaire vs Ouverture Directe du Widget — AC #1 implique que le widget s'ouvre depuis la landing page. L'implémentation actuelle utilise un lien vers `/register`, nécessitant un deuxième clic. -> Décision utilisateur : Maintenir la page intermédiaire (déviation acceptée).
+- [x] [Review][Patch] Pattern de Fetch API Inconsistent et manque de gestion d'erreurs HTTP [src/components/identity/RegisterWidget.tsx:23]
+- [x] [Review][Patch] État de chargement bloqué en cas d'échec du fetch [src/components/identity/RegisterWidget.tsx:31]
+- [x] [Review][Patch] Fuite de mémoire potentielle (manque de nettoyage dans useEffect) [src/components/identity/RegisterWidget.tsx:21]
+- [x] [Review][Patch] Assertion non-nulle dangereuse et manque de vérification de l'App ID [src/components/identity/RegisterWidget.tsx:82, 107]
+- [x] [Review][Patch] Tests d'intégration non implémentés (it.todo) [src/tests/registration.test.ts:75-78]
+- [x] [Review][Patch] Composant Client redondant (LandingButtons.tsx) [src/components/identity/LandingButtons.tsx:1]
+- [x] [Review][Patch] Parsing d'erreurs fragile dans l'UI [src/components/identity/RegisterWidget.tsx:36]
+- [x] [Review][Patch] Manque d'entropie dans la logique d'identité Mock [src/components/identity/RegisterWidget.tsx:50]
+- [x] [Review][Patch] Déviation du message de toast (texte de démo supplémentaire) [src/components/identity/RegisterWidget.tsx:38]
+- [x] [Review][Patch] Déviation du texte du bouton Mock ("Simulate Registration" vs "Register as Worker (Mock)") [src/components/identity/RegisterWidget.tsx:66]
+- [x] [Review][Patch] Route /tasks non protégée côté client [src/app/tasks/page.tsx]
+- [x] [Review][Defer] Feature Flags exposés dans le bundle client [src/components/identity/RegisterWidget.tsx:11] — deferred, pre-existing (conception architecturale)
