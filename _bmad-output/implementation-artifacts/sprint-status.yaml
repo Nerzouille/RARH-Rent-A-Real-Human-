@@ -53,7 +53,7 @@ development_status:
 
   # Epic 2: Autonomous Agent Integration (World AgentKit Bounty)
   epic-2: in-progress
-  2-1-agentkit-auth-middleware-and-registration: ready-for-dev
+  2-1-agentkit-auth-middleware-and-registration: review
   2-2-agentbook-lookup-and-human-link-fail-soft: backlog
   2-3-agent-task-creation-api: backlog
   2-4-visual-agent-identity-card: backlog

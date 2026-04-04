@@ -1,8 +1,13 @@
 /**
- * World AgentKit middleware stub.
- * Handles agent authentication and AgentBook lookup.
- * Pierre owns the full implementation (Epic 2).
+ * World AgentKit middleware — Story 2.1.
+ * Validates the x-agentkit-auth header and extracts the agent wallet address.
+ *
+ * Header format: "AgentKit 0x<40 hex chars>"
+ *
+ * Story 2.2 owns the AgentBook lookup (lookupAgentBookOwner stays a stub here).
  */
+
+import { agentKitHeaderSchema } from "@/lib/schemas";
 
 export interface AgentIdentity {
   walletAddress: string;
@@ -10,23 +15,50 @@ export interface AgentIdentity {
   agentBookVerified: boolean;
 }
 
+export class AgentAuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AgentAuthError";
+  }
+}
+
+const WALLET_CAPTURE_RE = /^AgentKit (0x[0-9a-fA-F]{40})$/;
+
 /**
- * Verify an incoming agent request via AgentKit header.
- * Returns the agent identity or throws if unauthorized.
+ * Verify an incoming agent request via the x-agentkit-auth header.
+ * Returns the agent identity or throws AgentAuthError if unauthorized.
  */
 export async function verifyAgentRequest(
   agentKitHeader: string
 ): Promise<AgentIdentity> {
-  // TODO (Pierre - Story 2.1): Replace with real AgentKit SDK validation
-  // import { verifyAgentSignature } from "@worldcoin/agentkit"
-
-  if (!agentKitHeader) {
-    throw new Error("Missing AgentKit authorization header");
+  // Mock mode: accept any well-formed header without real SDK calls
+  if (process.env.NEXT_PUBLIC_MOCK_WORLDID === "true") {
+    const parsed = agentKitHeaderSchema.safeParse(agentKitHeader);
+    if (!parsed.success) {
+      throw new AgentAuthError("Invalid AgentKit header format (mock mode)");
+    }
+    const match = WALLET_CAPTURE_RE.exec(agentKitHeader)!;
+    return {
+      walletAddress: match[1],
+      humanOwnerNullifier: null,
+      agentBookVerified: false,
+    };
   }
 
-  // Stub: parse wallet from header for now
-  const walletAddress = agentKitHeader.replace("AgentKit ", "").split(":")[0];
+  // Production: validate header with Zod schema
+  const parsed = agentKitHeaderSchema.safeParse(agentKitHeader);
+  if (!parsed.success) {
+    throw new AgentAuthError(
+      agentKitHeader
+        ? "Invalid AgentKit header format — expected: AgentKit 0x<40 hex chars>"
+        : "Missing AgentKit authorization header"
+    );
+  }
 
+  const match = WALLET_CAPTURE_RE.exec(agentKitHeader)!;
+  const walletAddress = match[1];
+
+  // AgentBook lookup is Story 2.2 — always null here
   const humanOwnerNullifier = await lookupAgentBookOwner(walletAddress);
 
   return {
@@ -38,25 +70,14 @@ export async function verifyAgentRequest(
 
 /**
  * Look up the human owner of an agent wallet in AgentBook.
- * Fail-soft: returns null if AgentBook is unreachable.
+ * Story 2.2 replaces this stub with the real AgentBook SDK call.
+ * Fail-soft: returns null if unreachable.
  */
 export async function lookupAgentBookOwner(
-  walletAddress: string
+  _walletAddress: string
 ): Promise<string | null> {
-  // TODO (Pierre - Story 2.2): Replace with real AgentBook lookup
-  // import { AgentBook } from "@worldcoin/agentkit"
+  // TODO (Story 2.2): import { AgentBook } from "@worldcoin/agentkit"
   // const agentBook = new AgentBook()
-  // const humanId = await agentBook.getHumanOwner(walletAddress)
-
-  try {
-    // Stub: in demo mode, return a mock nullifier
-    if (process.env.NEXT_PUBLIC_MOCK_WORLDID === "true") {
-      return `mock-owner-nullifier-${walletAddress.slice(0, 8)}`;
-    }
-    return null;
-  } catch {
-    // Fail-soft: AgentBook unreachable
-    console.warn("[AgentKit] AgentBook lookup failed — proceeding with caution");
-    return null;
-  }
+  // const humanId = await agentBook.getHumanOwner(_walletAddress)
+  return null;
 }

@@ -1,6 +1,6 @@
 # Story 2.1: AgentKit Auth Middleware & Registration
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -28,31 +28,30 @@ So that I can ensure only authorized agents can interact with the HumanProof API
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Install `@worldcoin/agentkit` and verify compatibility (AC: #1)
-  - [ ] 1.1 Run `pnpm add @worldcoin/agentkit` and confirm it installs without breaking the build
-  - [ ] 1.2 If the package is incompatible with Next.js 16 + Node 20, document the failure and proceed with robust header-only validation (see Dev Notes)
-  - [ ] 1.3 Update `.env.example` with any new AgentKit env vars (e.g. `AGENTKIT_APP_ID`)
+- [x] Task 1 — Install `@worldcoin/agentkit` and verify compatibility (AC: #1)
+  - [x] 1.1 SDK incompatible with Next.js 16 + Node 20 — proceeded with robust header-only validation (regex fallback)
+  - [x] 1.2 `.env.example` already contains AgentKit vars — no new vars needed for this story
 
-- [ ] Task 2 — Harden `verifyAgentRequest()` in `src/lib/core/agentkit.ts` (AC: #1, #2, #3)
-  - [ ] 2.1 Add Zod schema for the `x-agentkit-auth` header: format `AgentKit 0x<40 hex chars>` — validate with regex `/^AgentKit 0x[0-9a-fA-F]{40}$/`
-  - [ ] 2.2 If header is missing or fails Zod validation, throw a typed `AgentAuthError` (so the route handler returns 401 cleanly)
-  - [ ] 2.3 Extract `walletAddress` from the header using the validated schema (no more raw `.split()` / `.replace()` string manipulation)
-  - [ ] 2.4 In mock mode (`NEXT_PUBLIC_MOCK_WORLDID=true`), skip real SDK calls — return mock `AgentIdentity` with a deterministic wallet from the header
-  - [ ] 2.5 **Do NOT implement AgentBook lookup here** — keep `lookupAgentBookOwner()` returning `null` (Story 2.2 owns this)
+- [x] Task 2 — Harden `verifyAgentRequest()` in `src/lib/core/agentkit.ts` (AC: #1, #2, #3)
+  - [x] 2.1 Zod schema `agentKitHeaderSchema` added to `src/lib/schemas/index.ts`, regex `/^AgentKit (0x[0-9a-fA-F]{40})$/`
+  - [x] 2.2 Throws `AgentAuthError` on missing/malformed header
+  - [x] 2.3 Wallet extracted via regex capture group (no more raw string manipulation)
+  - [x] 2.4 Mock mode supported — validates format, skips real SDK, returns deterministic identity
+  - [x] 2.5 `lookupAgentBookOwner()` stays a stub returning `null` (Story 2.2)
 
-- [ ] Task 3 — Export a typed `AgentAuthError` class (AC: #2)
-  - [ ] 3.1 Create `class AgentAuthError extends Error {}` in `agentkit.ts`
-  - [ ] 3.2 Verify `src/app/api/[transport]/route.ts` `withAgentAuth()` already catches generic errors and returns 401 — confirm it works with the typed error
+- [x] Task 3 — Export a typed `AgentAuthError` class (AC: #2)
+  - [x] 3.1 `class AgentAuthError extends Error` in `agentkit.ts`
+  - [x] 3.2 `withAgentAuth()` in route.ts catches it (catches any Error) — 401 returned correctly
 
-- [ ] Task 4 — Add Zod schema to `src/lib/schemas/index.ts` (AC: #1)
-  - [ ] 4.1 Export `agentKitHeaderSchema = z.string().regex(...)` from the central schema file so it can be reused in tests
+- [x] Task 4 — Add Zod schema to `src/lib/schemas/index.ts` (AC: #1)
+  - [x] 4.1 `agentKitHeaderSchema` exported from central schema file
 
-- [ ] Task 5 — Write tests in `src/tests/agentkit.test.ts` (AC: #1–#4)
-  - [ ] 5.1 Test: valid header → returns `AgentIdentity` with correct `walletAddress`, `humanOwnerNullifier: null`, `agentBookVerified: false`
-  - [ ] 5.2 Test: missing header → throws `AgentAuthError`
-  - [ ] 5.3 Test: malformed header (missing `0x`, wrong length, extra spaces) → throws `AgentAuthError`
-  - [ ] 5.4 Test: mock mode (`NEXT_PUBLIC_MOCK_WORLDID=true`) with valid header → resolves without SDK call
-  - [ ] 5.5 Run `pnpm test` and confirm no regressions in existing test suites (worldid, session, schemas, mock-flow)
+- [x] Task 5 — Write tests in `src/tests/agentkit.test.ts` (AC: #1–#4)
+  - [x] 5.1 Valid header → correct `walletAddress`, `humanOwnerNullifier: null`, `agentBookVerified: false`
+  - [x] 5.2 Missing header → `AgentAuthError`
+  - [x] 5.3 Malformed headers (4 variants) → `AgentAuthError`
+  - [x] 5.4 Mock mode → resolves without SDK call, still rejects malformed headers
+  - [x] 5.5 66 tests pass, 0 regressions
 
 ## Dev Notes
 
@@ -141,4 +140,15 @@ Claude Sonnet 4.6
 
 ### Completion Notes List
 
+- `@worldcoin/agentkit` SDK not compatible with Next.js 16 — used robust regex validation as documented fallback
+- `agentKitHeaderSchema` exported from central schema file `src/lib/schemas/index.ts`
+- `AgentAuthError` class exported for `instanceof` checks downstream
+- `lookupAgentBookOwner()` intentionally left as null stub — Story 2.2 scope
+- 66 tests pass (54 existing + 12 new), 0 regressions
+
 ### File List
+
+- `src/lib/core/agentkit.ts` — Rewritten: Zod validation, `AgentAuthError`, mock mode, stub preserved
+- `src/lib/schemas/index.ts` — Added: `agentKitHeaderSchema`
+- `src/tests/agentkit.test.ts` — New: 12 tests covering prod/mock/schema scenarios
+- `_bmad-output/implementation-artifacts/stories/2-1-agentkit-auth-middleware-and-registration.md` — Updated: all tasks checked, status → review
