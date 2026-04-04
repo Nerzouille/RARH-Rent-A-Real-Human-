@@ -3,14 +3,23 @@
 import { use, useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
+import { STATUS_COLORS } from "@/lib/constants";
 
+/**
+ * Helper to format Hashscan URLs from Hedera transaction IDs.
+ * Handles mock IDs by returning a plain string instead of a broken link.
+ */
 function hashscanUrl(txId: string): string {
+  if (txId.startsWith("mock-")) return "";
   const [accountPart, timestampPart] = txId.split("@");
   if (!timestampPart) return `https://hashscan.io/testnet/transaction/${txId}`;
   const formatted = `${accountPart}-${timestampPart.replace(".", "-")}`;
   return `https://hashscan.io/testnet/transaction/${formatted}`;
 }
 
+/**
+ * Task detail page showing full description, escrow status, and worker actions.
+ */
 export default function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const utils = trpc.useUtils();
@@ -23,7 +32,11 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
       utils.task.get.invalidate({ id });
     },
     onError: (err) => {
-      setClaimError(err.message);
+      // Avoid exposing raw tRPC/DB errors; map to user-friendly messages
+      const msg = err.message.includes("already claimed") 
+        ? "Someone else just claimed this task. Refreshing..."
+        : "Failed to claim task. Please try again.";
+      setClaimError(msg);
     },
   });
 
@@ -46,15 +59,6 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  const statusColors: Record<string, string> = {
-    open: "bg-green-100 text-green-800",
-    claimed: "bg-amber-100 text-amber-800",
-    completed: "bg-blue-100 text-blue-800",
-    validated: "bg-gray-100 text-gray-600",
-    expired: "bg-red-100 text-red-700",
-    refunded: "bg-red-100 text-red-700",
-  };
-
   const deadline = new Date(task.deadline);
   const deadlineStr = deadline.toLocaleDateString("en-GB", {
     day: "numeric",
@@ -70,7 +74,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         </Link>
 
         <div className="flex items-start gap-3">
-          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusColors[task.status] ?? "bg-zinc-100 text-zinc-600"}`}>
+          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_COLORS[task.status] ?? "bg-zinc-100 text-zinc-600"}`}>
             {task.status.toUpperCase()}
           </span>
         </div>
@@ -124,9 +128,13 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
               </button>
               {claimError && <p className="text-sm text-red-600">{claimError}</p>}
             </>
-          ) : session.role === "worker" && task.worker_nullifier === session.nullifier ? (
+          ) : session.role === "worker" && task.status === "claimed" && task.worker_nullifier === session.nullifier ? (
             <p className="text-sm font-medium text-emerald-600">
               ✅ You&apos;ve claimed this task. Complete the work, then come back.
+            </p>
+          ) : session.role === "worker" && task.worker_nullifier === session.nullifier ? (
+            <p className="text-sm font-medium text-zinc-500">
+              You are the assigned worker for this task ({task.status}).
             </p>
           ) : session.role === "worker" ? (
             <p className="text-sm text-zinc-500">

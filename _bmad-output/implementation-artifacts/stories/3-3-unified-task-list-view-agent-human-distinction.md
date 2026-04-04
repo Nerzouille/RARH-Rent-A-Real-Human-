@@ -1,6 +1,6 @@
 # Story 3.3: Unified Task List View (Agent/Human Distinction)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -258,3 +258,9 @@ claude-sonnet-4-6
 - `src/components/tasks/TaskCard.tsx` — created: reusable task card with client-type badges + status badge + "View Task →"
 - `src/app/tasks/page.tsx` — modified: replaced placeholder with real task list + filter + my tasks sections
 - `src/tests/task-schema.test.ts` — modified: 3 new ClientTypeSchema badge mapping tests
+
+### Review Findings
+
+- [x] [Review][Patch] Duplicated statusColors configuration [src/components/tasks/TaskCard.tsx:4]
+- [x] [Review][Defer] Aggressive polling on task list (5s) [src/app/tasks/page.tsx:17] — deferred, pre-existing (intentional for demo)
+- [x] [Review][Patch] Missing JSDoc/comments for TaskCard component [src/components/tasks/TaskCard.tsx:1]
