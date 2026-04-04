@@ -28,16 +28,16 @@ export default function Home() {
             href="/register"
             className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto")}
           >
-            Register as Worker
+            I&apos;m a Worker
           </Link>
           <Link
-            href="/tasks"
+            href="/client/register"
             className={cn(
               buttonVariants({ variant: "outline", size: "lg" }),
               "w-full sm:w-auto"
             )}
           >
-            Browse Tasks
+            I&apos;m a Client
           </Link>
         </div>
 
