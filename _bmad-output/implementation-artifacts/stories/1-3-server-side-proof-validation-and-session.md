@@ -1,6 +1,6 @@
 # Story 1.3: Server-Side Proof Validation & Session
 
-Status: review
+Status: done
 
 ## Story
 
