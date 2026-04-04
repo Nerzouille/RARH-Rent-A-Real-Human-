@@ -1,14 +1,6 @@
 import Link from "next/link";
 import type { Task } from "@/lib/schemas";
-
-const statusColors: Record<string, string> = {
-  open: "bg-green-100 text-green-800",
-  claimed: "bg-amber-100 text-amber-800",
-  completed: "bg-blue-100 text-blue-800",
-  validated: "bg-gray-100 text-gray-600",
-  expired: "bg-red-100 text-red-700",
-  refunded: "bg-red-100 text-red-700",
-};
+import { STATUS_COLORS } from "@/lib/constants";
 
 export function TaskCard({ task }: { task: Task }) {
   const deadline = new Date(task.deadline).toLocaleDateString("en-GB", {
