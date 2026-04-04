@@ -13,8 +13,8 @@
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:push": "drizzle-kit push",
-    "db:seed": "tsx server/db/seed.ts",
-    "db:reset": "docker compose down -v && docker compose up -d postgres && sleep 2 && drizzle-kit push && tsx server/db/seed.ts",
+    "db:seed": "tsx src/server/db/seed.ts",
+    "db:reset": "docker compose down -v && docker compose up -d postgres && sleep 2 && drizzle-kit push && tsx src/server/db/seed.ts",
     "db:studio": "drizzle-kit studio",
     "dev:full": "pnpm db:up && pnpm db:push && next dev --turbopack"
   },

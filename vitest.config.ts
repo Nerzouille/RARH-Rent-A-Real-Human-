@@ -6,13 +6,13 @@ export default defineConfig({
     environment: "node",
     coverage: {
       provider: "v8",
-      include: ["lib/**", "server/**"],
+      include: ["src/lib/**", "src/server/**"],
       exclude: ["**/*.d.ts"],
     },
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "."),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
 });
