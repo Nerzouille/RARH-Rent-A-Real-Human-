@@ -1,5 +1,5 @@
 # generated: 2026-04-04
-# last_updated: 2026-04-04T12:00:00Z
+# last_updated: 2026-04-04T14:00:00Z
 # project: RARH-Rent-A-Real-Human-
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-04
-last_updated: 2026-04-04T12:00:00Z
+last_updated: 2026-04-04T14:00:00Z
 
 
 project: RARH-Rent-A-Real-Human-
@@ -85,5 +85,5 @@ development_status:
   epic-5: in-progress
   5-1-visual-audit-trail-for-proofs-identity-agent-hedera: review
   5-2-judges-dashboard-for-fast-switching: review
-  5-3-admin-reset-and-debug-route-looping-demo: backlog
+  5-3-admin-reset-and-debug-route-looping-demo: review
   epic-5-retrospective: optional

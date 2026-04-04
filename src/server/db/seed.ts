@@ -2,34 +2,21 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { users, nullifiers, tasks } from "./schema";
 
-const DATABASE_URL =
-  process.env.DATABASE_URL ||
-  "postgresql://humanproof:humanproof@localhost:5432/humanproof";
-
-const client = postgres(DATABASE_URL);
-const db = drizzle(client);
-
 // ─── Demo nullifiers (stable IDs for repeatable demo) ─────────────────────────
 const NULLIFIER_WORKER_1 = "demo-nullifier-worker-alice-0001";
 const NULLIFIER_WORKER_2 = "demo-nullifier-worker-bob-0002";
 const NULLIFIER_CLIENT   = "demo-nullifier-client-corp-0003";
 const NULLIFIER_AGENT_OWNER = "demo-nullifier-agent-owner-0004";
 
-const now = new Date();
-const inTwoDays = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
-const inOneWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-async function seed() {
-  console.log("🌱 Seeding database...");
-
-  // ─── Truncate in order (FK-safe) ──────────────────────────────────────────
-  await db.delete(tasks);
-  await db.delete(nullifiers);
-  await db.delete(users);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function runSeed(db: any): Promise<{ users: number; tasks: number }> {
+  const now = new Date();
+  const inTwoDays = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+  const inOneWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   // ─── Users ────────────────────────────────────────────────────────────────
-  await db.insert(users).values([
+  const insertedUsers = await db.insert(users).values([
     {
       nullifier: NULLIFIER_WORKER_1,
       role: "worker",
@@ -56,7 +43,7 @@ async function seed() {
       hbar_balance: 300,
       tasks_completed: 0,
     },
-  ]);
+  ]).returning();
 
   // ─── Nullifiers (verified actions) ────────────────────────────────────────
   await db.insert(nullifiers).values([
@@ -68,8 +55,7 @@ async function seed() {
   ]);
 
   // ─── Tasks ────────────────────────────────────────────────────────────────
-  await db.insert(tasks).values([
-    // Open tasks — available to claim
+  const insertedTasks = await db.insert(tasks).values([
     {
       title: "Translate product description to French",
       description:
@@ -102,7 +88,6 @@ async function seed() {
       client_agent_wallet: "0x000000000000000000000000000000000000BABE",
       client_agent_owner_nullifier: NULLIFIER_AGENT_OWNER,
     },
-    // Claimed task — in progress
     {
       title: "Verify business address on Google Maps",
       description:
@@ -115,7 +100,6 @@ async function seed() {
       worker_nullifier: NULLIFIER_WORKER_1,
       escrow_tx_id: "0.0.12345@1700000000.000000000",
     },
-    // Validated task — full flow demo
     {
       title: "Answer a survey about AI tools",
       description:
@@ -130,9 +114,29 @@ async function seed() {
       escrow_tx_id: "0.0.12346@1700000001.000000000",
       payment_tx_id: "0.0.12347@1700000002.000000000",
     },
-  ]);
+  ]).returning();
 
-  console.log("✅ Seed complete — 4 users, 5 tasks inserted");
+  return { users: insertedUsers.length, tasks: insertedTasks.length };
+}
+
+// ─── CLI entrypoint ───────────────────────────────────────────────────────────
+async function seed() {
+  const DATABASE_URL =
+    process.env.DATABASE_URL ||
+    "postgresql://humanproof:humanproof@localhost:5432/humanproof";
+
+  const client = postgres(DATABASE_URL);
+  const db = drizzle(client);
+
+  console.log("🌱 Seeding database...");
+
+  await db.delete(tasks);
+  await db.delete(nullifiers);
+  await db.delete(users);
+
+  const counts = await runSeed(db);
+  console.log(`✅ Seed complete — ${counts.users} users, ${counts.tasks} tasks inserted`);
+
   await client.end();
 }
 
