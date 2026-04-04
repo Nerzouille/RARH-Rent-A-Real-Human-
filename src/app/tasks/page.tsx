@@ -2,9 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import { SimulateDepositButton } from "@/components/simulate-deposit-button";
 import { TaskCard } from "@/components/tasks/TaskCard";
+import { HumanVerifiedBadge } from "@/components/identity/HumanVerifiedBadge";
 
 type BudgetFilter = "all" | "lt10" | "gt10";
 
@@ -58,13 +60,30 @@ export default function TasksPage() {
   return (
     <div className="flex flex-col flex-1 items-start bg-zinc-50 dark:bg-black">
       <main className="flex flex-col gap-8 px-6 py-12 max-w-2xl w-full mx-auto">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Task Marketplace
-          </h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Welcome, {session.nullifier.slice(0, 12)}…
-          </p>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+              Task Marketplace
+            </h1>
+            <p className="text-sm text-zinc-500 mt-1">
+              Welcome, {session.nullifier.slice(0, 12)}…
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <HumanVerifiedBadge
+              nullifier={session.nullifier}
+              role={session.role}
+              tasksCompleted={0}
+              hbarBalance={0}
+              compact
+            />
+            <Link
+              href="/profile"
+              className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline underline-offset-2"
+            >
+              My profile
+            </Link>
+          </div>
         </div>
 
         {/* Balance & Deposit Section */}
