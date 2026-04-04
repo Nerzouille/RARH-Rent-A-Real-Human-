@@ -4,18 +4,7 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import { STATUS_COLORS } from "@/lib/constants";
-
-/**
- * Helper to format Hashscan URLs from Hedera transaction IDs.
- * Handles mock IDs by returning a plain string instead of a broken link.
- */
-function hashscanUrl(txId: string): string {
-  if (txId.startsWith("mock-")) return "";
-  const [accountPart, timestampPart] = txId.split("@");
-  if (!timestampPart) return `https://hashscan.io/testnet/transaction/${txId}`;
-  const formatted = `${accountPart}-${timestampPart.replace(".", "-")}`;
-  return `https://hashscan.io/testnet/transaction/${formatted}`;
-}
+import { AuditTrail } from "@/components/AuditTrail";
 
 function getTaskActionError(
   action: "claim" | "markComplete" | "validate",
@@ -310,46 +299,16 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
           ) : null}
         </div>
 
-        {/* Hedera TX section — escrow + payment */}
-        {(task.escrow_tx_id || task.payment_tx_id) && (
-          <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 px-4 py-3 flex flex-col gap-2">
-            <p className="text-xs text-zinc-500">Hedera</p>
-            {task.escrow_tx_id && (
-              <div>
-                <p className="text-xs text-zinc-400 mb-0.5">Escrow TX</p>
-                {task.escrow_tx_id.startsWith("mock-") ? (
-                  <p className="text-xs text-zinc-400 font-mono">{task.escrow_tx_id} (mock)</p>
-                ) : (
-                  <a
-                    href={hashscanUrl(task.escrow_tx_id)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-indigo-600 hover:underline font-mono"
-                  >
-                    {task.escrow_tx_id.slice(0, 20)}… ↗
-                  </a>
-                )}
-              </div>
-            )}
-            {task.payment_tx_id && (
-              <div>
-                <p className="text-xs text-zinc-400 mb-0.5">Payment TX</p>
-                {task.payment_tx_id.startsWith("mock-") ? (
-                  <p className="text-xs text-zinc-400 font-mono">{task.payment_tx_id} (mock)</p>
-                ) : (
-                  <a
-                    href={hashscanUrl(task.payment_tx_id)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-indigo-600 hover:underline font-mono"
-                  >
-                    {task.payment_tx_id.slice(0, 20)}… ↗
-                  </a>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        <AuditTrail
+          clientType={task.client_type}
+          clientNullifier={task.client_nullifier}
+          clientAgentWallet={task.client_agent_wallet}
+          clientAgentOwnerNullifier={task.client_agent_owner_nullifier}
+          workerNullifier={task.worker_nullifier}
+          escrowTxId={task.escrow_tx_id}
+          paymentTxId={task.payment_tx_id}
+          status={task.status}
+        />
       </main>
     </div>
   );
