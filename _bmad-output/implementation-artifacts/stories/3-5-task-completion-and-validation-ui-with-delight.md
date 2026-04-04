@@ -1,6 +1,6 @@
 # Story 3.5: Task Completion & Validation UI (with Delight!)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -427,4 +427,18 @@ _No blocking issues encountered._
 
 ### Change Log
 
-- 2026-04-05: Story 3.5 implemented — worker "Mark as Complete" flow, client "Validate & Release" flow with confetti, auto-polling, extended Hedera TX section, 4 new tests
+### Review Findings
+
+- [x] [Review][Decision] Implémentation de la "Bannière" — L'AC 3 demande une "bannière verte" pour la confirmation de soumission. Le code actuel utilise un simple paragraphe de texte vert (`text-emerald-600`). Décision : Transformer en vrai composant visuel (Option B).
+- [x] [Review][Patch] Lacunes dans la logique de Polling [src/app/tasks/[id]/page.tsx:28]
+- [x] [Review][Patch] Persistance des états d'erreur obsolètes [src/app/tasks/[id]/page.tsx]
+- [x] [Review][Patch] Découplage des tests de schéma [src/tests/task-schema.test.ts]
+- [x] [Review][Patch] Import bloquant de `canvas-confetti` [src/app/tasks/[id]/page.tsx]
+- [x] [Review][Patch] Garde de nullifier trop faible [src/app/tasks/[id]/page.tsx:161]
+- [x] [Review][Patch] Écarts de phrasé avec les AC [src/app/tasks/[id]/page.tsx:191]
+- [x] [Review][Patch] Emplacement du lien Hashscan [src/app/tasks/[id]/page.tsx]
+- [x] [Review][Patch] État "Open" manquant pour le client [src/app/tasks/[id]/page.tsx:215]
+- [x] [Review][Patch] Masquage des erreurs serveur réelles [src/app/tasks/[id]/page.tsx]
+- [x] [Review][Defer] Logique de détection "mock" [src/app/tasks/[id]/page.tsx] — deferred, pre-existing
+- [x] [Review][Defer] Troncature des hashes [src/app/tasks/[id]/page.tsx] — deferred, pre-existing
+- [x] [Review][Defer] Tests d'intégration du router it.todo [src/tests/task-schema.test.ts] — deferred, pre-existing

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
 import { TaskSchema, ClientTypeSchema, CreateTaskSchema } from "@/lib/schemas";
+import { TaskIdSchema } from "@/server/routers/task";
 
 // ─── ClientTypeSchema ─────────────────────────────────────────────────────────
 describe("ClientTypeSchema", () => {
@@ -232,52 +233,54 @@ describe("ClientTypeSchema — badge display mapping", () => {
 
 // ─── task.claim input schema — story 3.4 ────────────────────────────────────
 describe("task.claim input schema", () => {
-  const claimInputSchema = z.object({ taskId: z.string() });
-
-  it("accepts a valid task ID string", () => {
-    const result = claimInputSchema.safeParse({ taskId: "550e8400-e29b-41d4-a716-446655440000" });
+  it("accepts a valid UUID task ID string", () => {
+    const result = TaskIdSchema.safeParse({ taskId: "550e8400-e29b-41d4-a716-446655440000" });
     expect(result.success).toBe(true);
   });
 
-  it("accepts any non-empty string as taskId", () => {
-    const result = claimInputSchema.safeParse({ taskId: "task-abc-123" });
-    expect(result.success).toBe(true);
+  it("rejects non-UUID taskId", () => {
+    const result = TaskIdSchema.safeParse({ taskId: "task-abc-123" });
+    expect(result.success).toBe(false);
   });
 
   it("rejects missing taskId", () => {
-    const result = claimInputSchema.safeParse({});
+    const result = TaskIdSchema.safeParse({});
     expect(result.success).toBe(false);
   });
 
   it("rejects non-string taskId", () => {
-    const result = claimInputSchema.safeParse({ taskId: 42 });
+    const result = TaskIdSchema.safeParse({ taskId: 42 });
     expect(result.success).toBe(false);
   });
 });
 
 // ─── task.markComplete input schema — story 3.5 ──────────────────────────────
 describe("task.markComplete input schema", () => {
-  const markCompleteSchema = z.object({ taskId: z.string() });
-
-  it("accepts a valid task ID string", () => {
-    expect(markCompleteSchema.safeParse({ taskId: "550e8400-e29b-41d4-a716-446655440000" }).success).toBe(true);
+  it("accepts a valid UUID task ID string", () => {
+    expect(TaskIdSchema.safeParse({ taskId: "550e8400-e29b-41d4-a716-446655440000" }).success).toBe(true);
   });
 
   it("rejects missing taskId", () => {
-    expect(markCompleteSchema.safeParse({}).success).toBe(false);
+    expect(TaskIdSchema.safeParse({}).success).toBe(false);
+  });
+
+  it("rejects non-UUID taskId", () => {
+    expect(TaskIdSchema.safeParse({ taskId: "invalid-uuid" }).success).toBe(false);
   });
 });
 
 // ─── task.validate input schema — story 3.5 ──────────────────────────────────
 describe("task.validate input schema", () => {
-  const validateSchema = z.object({ taskId: z.string() });
-
-  it("accepts a valid task ID string", () => {
-    expect(validateSchema.safeParse({ taskId: "550e8400-e29b-41d4-a716-446655440000" }).success).toBe(true);
+  it("accepts a valid UUID task ID string", () => {
+    expect(TaskIdSchema.safeParse({ taskId: "550e8400-e29b-41d4-a716-446655440000" }).success).toBe(true);
   });
 
   it("rejects missing taskId", () => {
-    expect(validateSchema.safeParse({}).success).toBe(false);
+    expect(TaskIdSchema.safeParse({}).success).toBe(false);
+  });
+
+  it("rejects non-UUID taskId", () => {
+    expect(TaskIdSchema.safeParse({ taskId: "invalid-uuid" }).success).toBe(false);
   });
 });
 

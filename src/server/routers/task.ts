@@ -7,6 +7,9 @@ import { CreateTaskSchema, TaskStatusSchema } from "@/lib/schemas";
 import { eq, sql, and, gte } from "drizzle-orm";
 import { lockEscrow, releasePayment, hashscanUrl } from "@/lib/core/hedera";
 
+// Common input schemas
+export const TaskIdSchema = z.object({ taskId: z.string().uuid() });
+
 export const taskRouter = router({
   // List tasks — optional status filter; defaults to "open" for backwards compat
   list: publicProcedure
@@ -120,7 +123,7 @@ export const taskRouter = router({
 
   // Claim a task
   claim: protectedProcedure
-    .input(z.object({ taskId: z.string() }))
+    .input(TaskIdSchema)
     .mutation(async ({ input, ctx }) => {
       if (ctx.session.role !== "worker") {
         throw new TRPCError({
@@ -162,7 +165,7 @@ export const taskRouter = router({
 
   // Worker marks task complete
   markComplete: protectedProcedure
-    .input(z.object({ taskId: z.string() }))
+    .input(TaskIdSchema)
     .mutation(async ({ input, ctx }) => {
       const task = await db.query.tasks.findFirst({
         where: (t, { eq }) => eq(t.id, input.taskId),
@@ -193,7 +196,7 @@ export const taskRouter = router({
 
   // Human client validates task (agent tasks use /api/mcp instead)
   validate: protectedProcedure
-    .input(z.object({ taskId: z.string() }))
+    .input(TaskIdSchema)
     .mutation(async ({ input, ctx }) => {
       const task = await db.query.tasks.findFirst({
         where: (t, { eq }) => eq(t.id, input.taskId),

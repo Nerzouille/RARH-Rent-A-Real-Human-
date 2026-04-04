@@ -2,7 +2,6 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import confetti from "canvas-confetti";
 import { trpc } from "@/lib/trpc/client";
 import { STATUS_COLORS } from "@/lib/constants";
 
@@ -18,36 +17,89 @@ function hashscanUrl(txId: string): string {
   return `https://hashscan.io/testnet/transaction/${formatted}`;
 }
 
+function getTaskActionError(
+  action: "claim" | "markComplete" | "validate",
+  message: string
+): string {
+  const normalized = message.toLowerCase();
+
+  if (action === "claim") {
+    if (normalized.includes("already claimed")) {
+      return "Someone else just claimed this task. Refreshing...";
+    }
+    if (normalized.includes("only workers")) {
+      return "Only workers can claim tasks.";
+    }
+    return "Failed to claim task. Please try again.";
+  }
+
+  if (action === "markComplete") {
+    if (normalized.includes("assigned worker")) {
+      return "Only the assigned worker can mark this task complete.";
+    }
+    if (normalized.includes("claimed status")) {
+      return "This task can no longer be marked complete.";
+    }
+    return "Failed to submit completion. Please try again.";
+  }
+
+  if (normalized.includes("task client")) {
+    return "Only the task client can validate this task.";
+  }
+  if (normalized.includes("completed status")) {
+    return "This task is not ready for validation yet.";
+  }
+  if (normalized.includes("already released")) {
+    return "Payment has already been released for this task.";
+  }
+  if (normalized.includes("mcp api")) {
+    return "Agent-posted tasks must be validated via the MCP API.";
+  }
+
+  return "Failed to release payment. Please try again.";
+}
+
 /**
  * Task detail page showing full description, escrow status, and worker/client actions.
  */
 export default function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const utils = trpc.useUtils();
+  const { data: session } = trpc.auth.me.useQuery();
   const { data: task, isLoading } = trpc.task.get.useQuery(
     { id },
     {
       refetchInterval: (query) => {
-        const status = query.state.data?.status;
-        return status === "claimed" ? 5000 : false;
+        const queryTask = query.state.data;
+        const shouldPoll =
+          session?.role === "client" &&
+          !!session.nullifier &&
+          queryTask?.status === "claimed" &&
+          queryTask.client_nullifier === session.nullifier;
+        return shouldPoll ? 5000 : false;
       },
     }
   );
-  const { data: session } = trpc.auth.me.useQuery();
   const [claimError, setClaimError] = useState<string | null>(null);
   const [markCompleteError, setMarkCompleteError] = useState<string | null>(null);
   const [validateError, setValidateError] = useState<string | null>(null);
+  const [recentValidation, setRecentValidation] = useState<{
+    paymentTxId: string | null;
+    hashscanLink: string;
+  } | null>(null);
+
+  const clearErrors = () => {
+    setClaimError(null);
+    setMarkCompleteError(null);
+    setValidateError(null);
+  };
 
   const { mutate: claimTask, isPending: isClaiming } = trpc.task.claim.useMutation({
     onSuccess: () => {
       utils.task.get.invalidate({ id });
     },
     onError: (err) => {
-      // Avoid exposing raw tRPC/DB errors; map to user-friendly messages
-      const msg = err.message.includes("already claimed")
-        ? "Someone else just claimed this task. Refreshing..."
-        : "Failed to claim task. Please try again.";
-      setClaimError(msg);
+      setClaimError(getTaskActionError("claim", err.message));
     },
   });
 
@@ -55,18 +107,28 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     onSuccess: () => {
       utils.task.get.invalidate({ id });
     },
-    onError: () => {
-      setMarkCompleteError("Failed to submit completion. Please try again.");
+    onError: (err) => {
+      setMarkCompleteError(getTaskActionError("markComplete", err.message));
     },
   });
 
   const { mutate: validateTask, isPending: isValidating } = trpc.task.validate.useMutation({
-    onSuccess: () => {
-      confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+    onSuccess: (data) => {
+      setRecentValidation({
+        paymentTxId: data.payment_tx_id ?? null,
+        hashscanLink: data.hashscanLink,
+      });
       utils.task.get.invalidate({ id });
+      void import("canvas-confetti")
+        .then(({ default: confetti }) => {
+          confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+        })
+        .catch(() => {
+          // Confetti is cosmetic. Do not block the validated-state refresh if it fails to load.
+        });
     },
-    onError: () => {
-      setValidateError("Failed to release payment. Please try again.");
+    onError: (err) => {
+      setValidateError(getTaskActionError("validate", err.message));
     },
   });
 
@@ -95,6 +157,16 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     month: "short",
     year: "numeric",
   });
+  const showRecentValidationSuccess =
+    task.status === "validated" &&
+    !!recentValidation &&
+    recentValidation.paymentTxId === task.payment_tx_id;
+  const paymentLink =
+    showRecentValidationSuccess && recentValidation.hashscanLink
+      ? recentValidation.hashscanLink
+      : task.payment_tx_id
+        ? hashscanUrl(task.payment_tx_id)
+        : "";
 
   return (
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
@@ -150,7 +222,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 Payment is held in escrow until your work is validated.
               </p>
               <button
-                onClick={() => { setClaimError(null); claimTask({ taskId: task.id }); }}
+                onClick={() => { clearErrors(); claimTask({ taskId: task.id }); }}
                 disabled={isClaiming}
                 className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
@@ -158,11 +230,11 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
               </button>
               {claimError && <p className="text-sm text-red-600">{claimError}</p>}
             </>
-          ) : session.role === "worker" && task.status === "claimed" && task.worker_nullifier === session.nullifier ? (
+          ) : session.role === "worker" && task.status === "claimed" && !!session.nullifier && task.worker_nullifier === session.nullifier ? (
             <>
               <p className="text-sm text-zinc-500">Complete the work, then tap below.</p>
               <button
-                onClick={() => { setMarkCompleteError(null); markComplete({ taskId: task.id }); }}
+                onClick={() => { clearErrors(); markComplete({ taskId: task.id }); }}
                 disabled={isMarkingComplete}
                 className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
@@ -170,11 +242,13 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
               </button>
               {markCompleteError && <p className="text-sm text-red-600">{markCompleteError}</p>}
             </>
-          ) : session.role === "worker" && task.status === "completed" && task.worker_nullifier === session.nullifier ? (
-            <p className="text-sm font-medium text-emerald-600">
-              ✅ Completion submitted! Awaiting client validation.
-            </p>
-          ) : session.role === "worker" && task.status === "validated" && task.worker_nullifier === session.nullifier ? (
+          ) : session.role === "worker" && task.status === "completed" && !!session.nullifier && task.worker_nullifier === session.nullifier ? (
+            <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 px-3 py-2">
+              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-400">
+                ✅ Completion submitted! Awaiting client validation.
+              </p>
+            </div>
+          ) : session.role === "worker" && task.status === "validated" && !!session.nullifier && task.worker_nullifier === session.nullifier ? (
             <p className="text-sm font-medium text-emerald-600">
               ✅ Task validated. Payment received.
             </p>
@@ -185,28 +259,54 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 Browse other available tasks →
               </Link>
             </p>
-          ) : session.role === "client" && task.client_nullifier === session.nullifier && task.status === "claimed" ? (
-            <p className="text-sm text-zinc-500">
-              ⏳ Worker is completing the task. You&apos;ll be notified when they&apos;re done.
-            </p>
-          ) : session.role === "client" && task.client_nullifier === session.nullifier && task.status === "completed" ? (
+          ) : session.role === "client" && !!session.nullifier && task.client_nullifier === session.nullifier ? (
             <>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                Worker has marked this complete. Review and validate to release payment to the worker.
-              </p>
-              <button
-                onClick={() => { setValidateError(null); validateTask({ taskId: task.id }); }}
-                disabled={isValidating}
-                className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isValidating ? "Releasing payment…" : "Validate & Release"}
-              </button>
-              {validateError && <p className="text-sm text-red-600">{validateError}</p>}
+              {task.status === "open" ? (
+                <p className="text-sm text-zinc-500 italic">
+                  Waiting for workers to claim this task...
+                </p>
+              ) : task.status === "claimed" ? (
+                <p className="text-sm text-zinc-500">
+                  ⏳ Worker is completing the task. You&apos;ll be notified when they&apos;re done.
+                </p>
+              ) : task.status === "completed" ? (
+                <>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    Worker has marked this complete. Review and validate to release payment.
+                  </p>
+                  <button
+                    onClick={() => {
+                      clearErrors();
+                      setRecentValidation(null);
+                      validateTask({ taskId: task.id });
+                    }}
+                    disabled={isValidating}
+                    className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isValidating ? "Releasing payment…" : "Validate & Release"}
+                  </button>
+                  {validateError && <p className="text-sm text-red-600">{validateError}</p>}
+                </>
+              ) : task.status === "validated" ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-medium text-emerald-600">
+                    {showRecentValidationSuccess
+                      ? "✅ Task complete. Payment released to worker."
+                      : "✅ Task complete. Payment released."}
+                  </p>
+                  {paymentLink && (
+                    <a
+                      href={paymentLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-indigo-600 hover:underline font-mono"
+                    >
+                      View payment on Hashscan ↗
+                    </a>
+                  )}
+                </div>
+              ) : null}
             </>
-          ) : session.role === "client" && task.client_nullifier === session.nullifier && task.status === "validated" ? (
-            <p className="text-sm font-medium text-emerald-600">
-              ✅ Task complete. Payment released to worker.
-            </p>
           ) : null}
         </div>
 
