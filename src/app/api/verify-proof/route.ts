@@ -31,8 +31,9 @@ export async function POST(req: NextRequest) {
         { status: 409 }
       );
     }
+    console.error("Verification error:", err);
     return NextResponse.json(
-      { error: "Verification failed", details: String(err) },
+      { error: "Verification failed", details: err instanceof Error ? err.message : "Unknown error" },
       { status: 400 }
     );
   }

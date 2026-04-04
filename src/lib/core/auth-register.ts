@@ -21,24 +21,28 @@ export async function completeRegistration(
 ): Promise<{ user: User; token: string; nullifier: string }> {
   const { nullifier } = await verifyWorldIDProof(idkitResponse);
 
-  const existing = await db.query.nullifiers.findFirst({
-    where: (n, { and, eq }) =>
-      and(eq(n.nullifier, nullifier), eq(n.action, "register")),
+  return await db.transaction(async (tx) => {
+    const existing = await tx.query.nullifiers.findFirst({
+      where: (n, { and, eq }) => and(eq(n.nullifier, nullifier), eq(n.action, "register")),
+    });
+
+    if (existing) {
+      throw new HumanAlreadyRegisteredError();
+    }
+
+    const [user] = await tx
+      .insert(users)
+      .values({ nullifier, role })
+      .onConflictDoUpdate({ target: users.nullifier, set: { role } })
+      .returning();
+
+    await tx
+      .insert(nullifiers)
+      .values({ nullifier, action: "register" })
+      .onConflictDoNothing();
+
+    const token = await createSession({ nullifier, role: user.role, userId: user.id });
+
+    return { user, token, nullifier };
   });
-
-  if (existing) {
-    throw new HumanAlreadyRegisteredError();
-  }
-
-  const [user] = await db
-    .insert(users)
-    .values({ nullifier, role })
-    .onConflictDoUpdate({ target: users.nullifier, set: { role } })
-    .returning();
-
-  await db.insert(nullifiers).values({ nullifier, action: "register" }).onConflictDoNothing();
-
-  const token = await createSession({ nullifier, role: user.role, userId: user.id });
-
-  return { user, token, nullifier };
 }

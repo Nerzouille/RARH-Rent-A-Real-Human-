@@ -170,3 +170,12 @@ claude-sonnet-4-6
 - `src/tests/worldid.test.ts` — modified: updated to new verifyWorldIDProof signature + 4 new real-mode tests
 - `src/tests/mock-flow.test.ts` — modified: updated to new verifyWorldIDProof signature
 - `src/tests/registration.test.ts` — modified: filled integration stubs (completeRegistration + protectedProcedure tests)
+
+### Review Findings
+
+- [x] [Review][Patch] Race condition in registration [src/lib/core/auth-register.ts:24-38]
+- [x] [Review][Patch] Missing JSON validation in verifyWorldIDProof [src/lib/core/worldid.ts:50]
+- [x] [Review][Patch] Information leak in error handling [src/app/api/verify-proof/route.ts, src/server/routers/auth.ts]
+- [x] [Review][Patch] Hardcoded secret fallback [src/lib/core/session.ts]
+- [x] [Review][Patch] Empty WORLD_RP_ID guard [src/lib/core/worldid.ts:34]
+- [x] [Review][Patch] Missing redirect verification in tests [src/tests/registration.test.ts]

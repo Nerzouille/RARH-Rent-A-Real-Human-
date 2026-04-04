@@ -32,7 +32,11 @@ export const authRouter = router({
         if (err instanceof HumanAlreadyRegisteredError) {
           throw new TRPCError({ code: "CONFLICT", message: "HUMAN_ALREADY_REGISTERED" });
         }
-        throw new TRPCError({ code: "BAD_REQUEST", message: String(err) });
+        console.error("Registration error:", err);
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: err instanceof Error ? err.message : "Registration failed",
+        });
       }
     }),
 });

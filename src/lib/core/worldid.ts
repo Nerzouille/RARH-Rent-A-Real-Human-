@@ -2,12 +2,12 @@ import { signRequest } from "@worldcoin/idkit-core/signing";
 
 export async function generateRPContext(action: string) {
   const { sig, nonce, createdAt, expiresAt } = signRequest({
-    signingKeyHex: process.env.WORLD_RP_SIGNING_KEY!,
+    signingKeyHex: process.env.RP_SIGNING_KEY!,
     action,
   });
 
   return {
-    rp_id: process.env.WORLD_RP_ID!,
+    rp_id: process.env.RP_ID!,
     nonce,
     created_at: createdAt,
     expires_at: expiresAt,
@@ -31,7 +31,7 @@ export async function verifyWorldIDProof(
     };
   }
 
-  const rpId = process.env.WORLD_RP_ID;
+  const rpId = process.env.WORLD_RP_ID?.trim();
   if (!rpId) {
     throw new Error("WORLD_RP_ID is not configured");
   }
@@ -50,12 +50,13 @@ export async function verifyWorldIDProof(
     throw new Error(`World ID verification failed: ${JSON.stringify(err)}`);
   }
 
-  const result = await res.json();
+  const result = await res.json().catch(() => ({}));
   const nullifier = result.nullifier ?? result.nullifier_hash;
 
   if (!nullifier || typeof nullifier !== "string") {
     throw new Error("World ID verification returned invalid or missing nullifier");
   }
+
 
   return { nullifier, verified: true };
 }

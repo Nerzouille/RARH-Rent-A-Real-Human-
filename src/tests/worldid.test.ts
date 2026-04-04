@@ -51,7 +51,7 @@ describe("verifyWorldIDProof (mock mode)", () => {
 describe("verifyWorldIDProof (real mode) — response validation", () => {
   it("throws when World API returns non-OK status", async () => {
     vi.stubEnv("NEXT_PUBLIC_MOCK_WORLDID", "false");
-    vi.stubEnv("WORLD_RP_ID", "test-rp-id");
+    vi.stubEnv("RP_ID", "test-rp-id");
 
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: false,
@@ -66,7 +66,7 @@ describe("verifyWorldIDProof (real mode) — response validation", () => {
 
   it("throws when World API returns success but no nullifier", async () => {
     vi.stubEnv("NEXT_PUBLIC_MOCK_WORLDID", "false");
-    vi.stubEnv("WORLD_RP_ID", "test-rp-id");
+    vi.stubEnv("RP_ID", "test-rp-id");
 
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
@@ -79,19 +79,19 @@ describe("verifyWorldIDProof (real mode) — response validation", () => {
     );
   });
 
-  it("throws when WORLD_RP_ID env var is missing", async () => {
+  it("throws when RP_ID env var is missing", async () => {
     vi.stubEnv("NEXT_PUBLIC_MOCK_WORLDID", "false");
-    // WORLD_RP_ID is not set
+    // RP_ID is not set
 
     const { verifyWorldIDProof } = await import("@/lib/core/worldid");
     await expect(verifyWorldIDProof({ proof: "any" })).rejects.toThrow(
-      "WORLD_RP_ID is not configured"
+      "RP_ID is not configured"
     );
   });
 
   it("uses the server-configured RP ID, not any caller-provided value", async () => {
     vi.stubEnv("NEXT_PUBLIC_MOCK_WORLDID", "false");
-    vi.stubEnv("WORLD_RP_ID", "server-rp-id");
+    vi.stubEnv("RP_ID", "server-rp-id");
 
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,

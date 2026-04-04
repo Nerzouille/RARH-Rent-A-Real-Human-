@@ -9,7 +9,11 @@ export const SESSION_COOKIE_OPTIONS = {
   path: "/",
 } as const;
 
-const secret = new TextEncoder().encode(process.env.SESSION_SECRET ?? "dev-secret-change-me");
+const secretStr = process.env.SESSION_SECRET;
+if (!secretStr) {
+  throw new Error("SESSION_SECRET is not configured");
+}
+const secret = new TextEncoder().encode(secretStr);
 
 export async function createSession(payload: SessionPayload): Promise<string> {
   return new SignJWT({ ...payload })

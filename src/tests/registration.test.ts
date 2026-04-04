@@ -169,3 +169,29 @@ describe("protectedProcedure — rejects unauthorized requests (AC #4)", () => {
     await expect(caller.ping()).resolves.toBe("pong");
   });
 });
+
+// ─── AC #3: Redirect logic — verification result ─────────────────────────────
+describe("auth.register result — redirect readiness", () => {
+  it("returns user id on success (client uses this to redirect to /tasks)", async () => {
+    vi.stubEnv("NEXT_PUBLIC_MOCK_WORLDID", "true");
+    vi.stubEnv("SESSION_SECRET", "test-secret-12345678901234567890");
+
+    const mockUser = { id: "user-123", nullifier: "n1", role: "worker" as const };
+    const mockReturning = vi.fn().mockResolvedValue([mockUser]);
+    const mockValues = vi.fn().mockReturnValue({ onConflictDoUpdate: vi.fn().mockReturnValue({ returning: mockReturning }) });
+    
+    vi.doMock("@/lib/db", () => ({
+      db: {
+        transaction: (cb: any) => cb({
+          query: { nullifiers: { findFirst: vi.fn().mockResolvedValue(null) } },
+          insert: vi.fn().mockReturnValue({ values: mockValues }),
+        }),
+      },
+    }));
+
+    const { completeRegistration } = await import("@/lib/core/auth-register");
+    const result = await completeRegistration({ mock: true }, "worker");
+
+    expect(result.user.id).toBe("user-123");
+  });
+});
