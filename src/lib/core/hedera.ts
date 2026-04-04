@@ -89,23 +89,30 @@ export async function lockEscrow(
 }
 
 export async function releasePayment(
-  workerAccountId: string,
+  workerAccountId: string | null | undefined,
   budgetHbar: number,
   taskId: string
 ): Promise<string> {
   const client = getClient();
-  const platformAccountId = process.env.HEDERA_ACCOUNT_ID!;
+  const platformAccountId = getOperatorAccountId();
 
-  const tx = new TransferTransaction()
-    .addHbarTransfer(platformAccountId, new Hbar(-budgetHbar))
-    .addHbarTransfer(workerAccountId, new Hbar(budgetHbar))
-    .setTransactionMemo(`payment:${taskId}`);
+  const memo = `release:${taskId}:${budgetHbar}HBAR`;
+  const tx = new TransferTransaction();
+
+  if (workerAccountId) {
+    tx.addHbarTransfer(platformAccountId, new Hbar(-budgetHbar))
+      .addHbarTransfer(workerAccountId, new Hbar(budgetHbar));
+  } else {
+    tx.addHbarTransfer(platformAccountId, new Hbar(0));
+  }
+
+  tx.setTransactionMemo(memo);
 
   const response = await tx.execute(client);
   const receipt = await response.getReceipt(client);
 
   if (receipt.status.toString() !== "SUCCESS") {
-    throw new Error(`Hedera payment failed: ${receipt.status}`);
+    throw new Error(`Hedera payment release failed: ${receipt.status}`);
   }
 
   return response.transactionId.toString();
