@@ -1,6 +1,6 @@
 # Story 2.5: Agent Task Status Polling & Validation API
 
-Status: review
+Status: done
 
 ## Story
 
@@ -95,6 +95,7 @@ Claude Sonnet 4.6
 - `validate_task` : double guard (ownership + status completed), worker lookup, `releasePayment` avec fallback mock
 - Tests sans DB — logique pure testée (ownership, guards, payment branch, response shape)
 - 95 tests passent, 0 régressions
+- **E2E gap** : `validate_task` ne peut être exercé end-to-end qu'une fois les stories 3.4 (claim) et 3.5 (mark complete) implémentées — la tâche doit atteindre le status `completed` avant validation
 
 ### File List
 

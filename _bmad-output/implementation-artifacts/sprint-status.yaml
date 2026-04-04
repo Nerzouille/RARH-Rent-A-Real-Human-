@@ -59,7 +59,7 @@ development_status:
   2-2-agentbook-lookup-and-human-link-fail-soft: done
   2-3-agent-task-creation-api: review
   2-4-visual-agent-identity-card: done
-  2-5-agent-task-status-polling-and-validation-api: review
+  2-5-agent-task-status-polling-and-validation-api: done  # validate_task e2e blocked on 3.4+3.5 (task must reach "completed" status)
   epic-2-retrospective: optional
 
   # Epic 3: Task Marketplace & Lifecycle
