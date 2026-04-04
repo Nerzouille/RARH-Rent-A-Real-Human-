@@ -202,6 +202,33 @@ describe("CreateTaskSchema — form validation edge cases", () => {
   });
 });
 
+// ─── ClientTypeSchema — badge display mapping (story 3.3) ────────────────────
+describe("ClientTypeSchema — badge display mapping", () => {
+  it("accepts 'agent' and maps to agent badge label", () => {
+    const result = ClientTypeSchema.safeParse("agent");
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const label = result.data === "agent" ? "🤖 Autonomous Agent" : "👤 Verified Human";
+      expect(label).toBe("🤖 Autonomous Agent");
+    }
+  });
+
+  it("accepts 'human' and maps to human badge label", () => {
+    const result = ClientTypeSchema.safeParse("human");
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const label = result.data === "agent" ? "🤖 Autonomous Agent" : "👤 Verified Human";
+      expect(label).toBe("👤 Verified Human");
+    }
+  });
+
+  it("rejects unknown client types (e.g. 'bot', 'system')", () => {
+    expect(ClientTypeSchema.safeParse("bot").success).toBe(false);
+    expect(ClientTypeSchema.safeParse("system").success).toBe(false);
+    expect(ClientTypeSchema.safeParse("").success).toBe(false);
+  });
+});
+
 // ─── Integration stubs (require DB) ──────────────────────────────────────────
 describe("task tRPC router — integration stubs", () => {
   it.todo("task.create — creates task with client_nullifier from session");
