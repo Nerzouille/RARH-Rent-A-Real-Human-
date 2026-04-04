@@ -1,6 +1,6 @@
 # Story 2.1: AgentKit Auth Middleware & Registration
 
-Status: review
+Status: done
 
 ## Story
 
@@ -141,14 +141,19 @@ Claude Sonnet 4.6
 ### Completion Notes List
 
 - `@worldcoin/agentkit` SDK not compatible with Next.js 16 — used robust regex validation as documented fallback
-- `agentKitHeaderSchema` exported from central schema file `src/lib/schemas/index.ts`
+- `agentKitHeaderSchema` + `AGENTKIT_HEADER_RE` exported from `src/lib/schemas/index.ts` (single source of truth — code review fix)
 - `AgentAuthError` class exported for `instanceof` checks downstream
 - `lookupAgentBookOwner()` intentionally left as null stub — Story 2.2 scope
 - 66 tests pass (54 existing + 12 new), 0 regressions
 
+### Review Findings
+
+- [x] [Review][Patch] Regex dupliquée — `WALLET_CAPTURE_RE` vs `agentKitHeaderSchema` [`src/lib/core/agentkit.ts`, `src/lib/schemas/index.ts`] — Fixed: `AGENTKIT_HEADER_RE` exporté depuis schemas, importé dans agentkit.ts
+- [x] [Review][Defer] Pas de test direct pour `lookupAgentBookOwner()` [`src/lib/core/agentkit.ts:70`] — deferred, pre-existing (Story 2.2 couvre ce cas)
+
 ### File List
 
-- `src/lib/core/agentkit.ts` — Rewritten: Zod validation, `AgentAuthError`, mock mode, stub preserved
-- `src/lib/schemas/index.ts` — Added: `agentKitHeaderSchema`
+- `src/lib/core/agentkit.ts` — Rewritten: Zod validation, `AgentAuthError`, mock mode, stub preserved; imports `AGENTKIT_HEADER_RE` (code review fix)
+- `src/lib/schemas/index.ts` — Added: `AGENTKIT_HEADER_RE` + `agentKitHeaderSchema`
 - `src/tests/agentkit.test.ts` — New: 12 tests covering prod/mock/schema scenarios
-- `_bmad-output/implementation-artifacts/stories/2-1-agentkit-auth-middleware-and-registration.md` — Updated: all tasks checked, status → review
+- `_bmad-output/implementation-artifacts/stories/2-1-agentkit-auth-middleware-and-registration.md` — Updated: all tasks checked, status → done

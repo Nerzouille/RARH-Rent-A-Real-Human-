@@ -7,7 +7,7 @@
  * Story 2.2 owns the AgentBook lookup (lookupAgentBookOwner stays a stub here).
  */
 
-import { agentKitHeaderSchema } from "@/lib/schemas";
+import { agentKitHeaderSchema, AGENTKIT_HEADER_RE } from "@/lib/schemas";
 
 export interface AgentIdentity {
   walletAddress: string;
@@ -22,8 +22,6 @@ export class AgentAuthError extends Error {
   }
 }
 
-const WALLET_CAPTURE_RE = /^AgentKit (0x[0-9a-fA-F]{40})$/;
-
 /**
  * Verify an incoming agent request via the x-agentkit-auth header.
  * Returns the agent identity or throws AgentAuthError if unauthorized.
@@ -37,7 +35,7 @@ export async function verifyAgentRequest(
     if (!parsed.success) {
       throw new AgentAuthError("Invalid AgentKit header format (mock mode)");
     }
-    const match = WALLET_CAPTURE_RE.exec(agentKitHeader)!;
+    const match = AGENTKIT_HEADER_RE.exec(agentKitHeader)!;
     return {
       walletAddress: match[1],
       humanOwnerNullifier: null,
@@ -55,7 +53,7 @@ export async function verifyAgentRequest(
     );
   }
 
-  const match = WALLET_CAPTURE_RE.exec(agentKitHeader)!;
+  const match = AGENTKIT_HEADER_RE.exec(agentKitHeader)!;
   const walletAddress = match[1];
 
   // AgentBook lookup is Story 2.2 — always null here
