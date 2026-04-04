@@ -2,9 +2,10 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, protectedProcedure } from "@/lib/trpc/server";
 import { db } from "@/lib/db";
-import { tasks } from "@/server/db/schema";
+import { tasks, users } from "@/server/db/schema";
 import { CreateTaskSchema, TaskStatusSchema } from "@/lib/schemas";
-import { eq } from "drizzle-orm";
+import { eq, sql, and, gte } from "drizzle-orm";
+import { lockEscrow, hashscanUrl } from "@/lib/core/hedera";
 
 export const taskRouter = router({
   // List tasks — optional status filter; defaults to "open" for backwards compat
@@ -48,23 +49,73 @@ export const taskRouter = router({
     });
   }),
 
-  // Create task (human client)
+  // Create task (human client) with Hedera escrow lock
   create: protectedProcedure
     .input(CreateTaskSchema)
     .mutation(async ({ input, ctx }) => {
-      // TODO (story 4.3): trigger Hedera escrow lock here before insert
-      const [task] = await db
-        .insert(tasks)
-        .values({
-          ...input,
-          deadline: new Date(input.deadline),
-          client_type: "human",
-          client_nullifier: ctx.session.nullifier,
-          status: "open",
-        })
-        .returning();
+      // Fetch user and validate sufficient balance
+      const user = await db.query.users.findFirst({
+        where: (u, { eq }) => eq(u.nullifier, ctx.session.nullifier),
+      });
 
-      return task;
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      if (user.hbar_balance < input.budget_hbar) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Insufficient balance: you have ${user.hbar_balance} HBAR but the task requires ${input.budget_hbar} HBAR`,
+        });
+      }
+
+      // Generate task ID upfront (needed for Hedera memo before DB insert)
+      const taskId = crypto.randomUUID();
+
+      // Execute Hedera escrow TX first — DB changes only after confirmed SUCCESS
+      let escrowTxId: string;
+      try {
+        escrowTxId = await lockEscrow(input.budget_hbar, taskId, ctx.session.nullifier);
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Hedera escrow failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        });
+      }
+
+      // Wrap balance deduction + task insert in a DB transaction for atomicity
+      const task = await db.transaction(async (tx) => {
+        // Deduct balance with WHERE guard to prevent negative balance (TOCTOU safe)
+        const updated = await tx
+          .update(users)
+          .set({ hbar_balance: sql`${users.hbar_balance} - ${input.budget_hbar}` })
+          .where(and(eq(users.id, user.id), gte(users.hbar_balance, input.budget_hbar)))
+          .returning({ id: users.id });
+
+        if (updated.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Insufficient balance (concurrent modification detected)",
+          });
+        }
+
+        const [inserted] = await tx
+          .insert(tasks)
+          .values({
+            id: taskId,
+            ...input,
+            deadline: new Date(input.deadline),
+            client_type: "human",
+            client_nullifier: ctx.session.nullifier,
+            status: "open",
+            escrow_tx_id: escrowTxId,
+          })
+          .returning();
+
+        return inserted;
+      });
+
+      return { ...task, escrow_tx_id: escrowTxId, hashscanLink: hashscanUrl(escrowTxId) };
     }),
 
   // Claim a task

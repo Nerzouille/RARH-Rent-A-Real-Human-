@@ -65,15 +65,18 @@ export async function getAccountBalance(): Promise<number> {
 
 export async function lockEscrow(
   budgetHbar: number,
-  taskId: string
+  taskId: string,
+  clientNullifier?: string
 ): Promise<string> {
   const client = getClient();
-  const platformAccountId = process.env.HEDERA_ACCOUNT_ID!;
+  const platformAccountId = getOperatorAccountId();
 
-  // For MVP: escrow = funds stay in platform account, we just log the TX
+  const nullifierPrefix = clientNullifier ? clientNullifier.slice(0, 8) : "unknown";
+  const memo = `escrow:${taskId}:${budgetHbar}HBAR:client:${nullifierPrefix}`;
+
   const tx = new TransferTransaction()
-    .addHbarTransfer(platformAccountId, new Hbar(0)) // self-transfer to generate TX ID
-    .setTransactionMemo(`escrow:${taskId}:${budgetHbar}HBAR`);
+    .addHbarTransfer(platformAccountId, new Hbar(0))
+    .setTransactionMemo(memo);
 
   const response = await tx.execute(client);
   const receipt = await response.getReceipt(client);
