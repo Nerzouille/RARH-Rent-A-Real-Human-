@@ -17,6 +17,10 @@ type FormData = {
 
 type FieldErrors = Partial<Record<keyof FormData, string>>;
 
+/**
+ * Form component for human clients to post new tasks.
+ * Validates inputs client-side with Zod and handles Hedera escrow via tRPC.
+ */
 export function NewTaskForm() {
   const router = useRouter();
   const [form, setForm] = useState<FormData>({
@@ -36,7 +40,7 @@ export function NewTaskForm() {
   const createTask = trpc.task.create.useMutation({
     onSuccess: (data) => {
       toast.success("Task posted!", {
-        description: `Escrow funded on Hedera.`,
+        description: `Escrow funded on Hedera (TX: ${data.escrow_tx_id.slice(0, 12)}…).`,
         action: data.hashscanLink
           ? {
               label: "View on Hashscan",
@@ -53,15 +57,24 @@ export function NewTaskForm() {
     },
   });
 
+  /**
+   * Normalizes a date to end-of-day in the user's local timezone
+   * and converts it to an ISO string for the server.
+   */
+  function normalizeDeadline(dateStr: string): string {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    date.setHours(23, 59, 59, 999);
+    return date.toISOString();
+  }
+
   function validate(): boolean {
-    const deadlineISO = form.deadline
-      ? new Date(form.deadline + "T23:59:59.000Z").toISOString()
-      : "";
+    const deadlineISO = normalizeDeadline(form.deadline);
 
     const result = CreateTaskSchema.safeParse({
       title: form.title,
       description: form.description,
-      budget_hbar: parseInt(form.budget_hbar, 10) || 0,
+      budget_hbar: parseFloat(form.budget_hbar) || 0,
       deadline: deadlineISO,
     });
 
@@ -73,16 +86,24 @@ export function NewTaskForm() {
           fieldErrors[field] = issue.message;
         }
       }
-      // Validate deadline is in the future
-      if (form.deadline && new Date(form.deadline) <= new Date()) {
-        fieldErrors.deadline = "Must be a future date";
+      // Validate deadline is in the future (local comparison)
+      if (form.deadline) {
+        const selected = new Date(form.deadline);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (selected < today) {
+          fieldErrors.deadline = "Must be a future date";
+        }
       }
       setErrors(fieldErrors);
       return false;
     }
 
-    // Extra check: deadline must be in the future
-    if (form.deadline && new Date(form.deadline) <= new Date()) {
+    // Extra check: deadline must be today or future in local time
+    const selected = new Date(form.deadline);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selected < today) {
       setErrors({ deadline: "Must be a future date" });
       return false;
     }
@@ -104,18 +125,19 @@ export function NewTaskForm() {
     e.preventDefault();
     if (!validate()) return;
 
-    const deadlineISO = new Date(form.deadline + "T23:59:59.000Z").toISOString();
+    const deadlineISO = normalizeDeadline(form.deadline);
     createTask.mutate({
       title: form.title,
       description: form.description,
-      budget_hbar: parseInt(form.budget_hbar, 10),
+      budget_hbar: Math.floor(parseFloat(form.budget_hbar)),
       deadline: deadlineISO,
     });
   }
 
   const isFormEmpty =
     !form.title || !form.description || !form.budget_hbar || !form.deadline;
-  const isDisabled = isFormEmpty || createTask.isPending;
+  const hasErrors = Object.keys(errors).length > 0;
+  const isDisabled = isFormEmpty || hasErrors || createTask.isPending;
 
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-5 text-left">

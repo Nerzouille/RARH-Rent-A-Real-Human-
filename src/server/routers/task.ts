@@ -122,6 +122,13 @@ export const taskRouter = router({
   claim: protectedProcedure
     .input(z.object({ taskId: z.string() }))
     .mutation(async ({ input, ctx }) => {
+      if (ctx.session.role !== "worker") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only workers can claim tasks",
+        });
+      }
+
       const task = await db.query.tasks.findFirst({
         where: (t, { eq }) => eq(t.id, input.taskId),
       });
@@ -140,8 +147,15 @@ export const taskRouter = router({
           worker_nullifier: ctx.session.nullifier,
           updated_at: new Date(),
         })
-        .where(eq(tasks.id, input.taskId))
+        .where(and(eq(tasks.id, input.taskId), eq(tasks.status, "open")))
         .returning();
+
+      if (!updated) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Task was already claimed by another worker",
+        });
+      }
 
       return updated;
     }),

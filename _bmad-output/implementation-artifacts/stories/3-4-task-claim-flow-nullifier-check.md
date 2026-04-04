@@ -1,6 +1,6 @@
 # Story 3.4: Task Claim Flow (Nullifier Check)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -258,3 +258,12 @@ claude-sonnet-4-6
 
 - `src/app/tasks/[id]/page.tsx` — modified: added session + claim mutation + claim action section (5 states)
 - `src/tests/task-schema.test.ts` — modified: added `z` import + 4 claim input schema tests
+
+### Review Findings
+
+- [x] [Review][Patch] Task Claim Race Condition (missing status check in update) [src/server/routers/task.ts:133]
+- [x] [Review][Patch] Missing Role Authorization for Claiming (should be worker only) [src/server/routers/task.ts:121]
+- [x] [Review][Patch] Status Accuracy: Worker's "Claimed" message appears even after completed/validated [src/app/tasks/[id]/page.tsx:96]
+- [x] [Review][Patch] Broken Hashscan Links for Mock Transactions in success toast [src/lib/core/hedera.ts:145]
+- [x] [Review][Patch] Raw error message display in UI [src/app/tasks/[id]/page.tsx:26]
+- [x] [Review][Patch] Missing JSDoc/comments for TaskDetailPage logic [src/app/tasks/[id]/page.tsx:1]

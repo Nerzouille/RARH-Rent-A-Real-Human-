@@ -1,6 +1,6 @@
 # Story 3.2: Human Client Task Creation UI
 
-Status: review
+Status: done
 
 ## Story
 
@@ -223,3 +223,12 @@ claude-sonnet-4-6
 - `src/app/client/new-task/page.tsx` — created: protected task creation page
 - `src/components/tasks/NewTaskForm.tsx` — created: form component with Zod validation + balance display + SimulateDepositButton
 - `src/tests/task-schema.test.ts` — modified: 9 new form validation edge-case tests
+
+### Review Findings
+
+- [x] [Review][Patch] Deadline timezone ambiguity [src/components/tasks/NewTaskForm.tsx:60]
+- [x] [Review][Patch] Inconsistent "future date" validation [src/components/tasks/NewTaskForm.tsx:78]
+- [x] [Review][Patch] Button State: Post Task button does not disable for invalid inputs [src/components/tasks/NewTaskForm.tsx:142]
+- [x] [Review][Patch] Notification Detail: Success toast lacks Escrow TX ID [src/components/tasks/NewTaskForm.tsx:37]
+- [x] [Review][Patch] Budget Precision Loss via Truncation (parseInt) [src/components/tasks/NewTaskForm.tsx:110]
+- [x] [Review][Patch] Missing JSDoc/comments for NewTaskForm logic [src/components/tasks/NewTaskForm.tsx:1]
