@@ -4,7 +4,7 @@ import { router, protectedProcedure } from "@/lib/trpc/server";
 import { db } from "@/lib/db";
 import { tasks, users } from "@/server/db/schema";
 import { lockEscrow, releasePayment, simulateDeposit, hashscanUrl, getAccountBalance, getOperatorAccountId } from "@/lib/core/hedera";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export const paymentRouter = router({
   // Simulate HBAR deposit for demo
@@ -30,14 +30,18 @@ export const paymentRouter = router({
         });
       }
 
-      // Only update DB after Hedera TX confirmed
-      const newBalance = (user.hbar_balance ?? 0) + input.amount_hbar;
+      // Only update DB after Hedera TX confirmed — use SQL increment to avoid TOCTOU race
       await db
         .update(users)
-        .set({ hbar_balance: newBalance })
+        .set({ hbar_balance: sql`${users.hbar_balance} + ${input.amount_hbar}` })
         .where(eq(users.id, user.id));
 
-      return { txId, hashscanLink: hashscanUrl(txId), newBalance };
+      const updated = await db.query.users.findFirst({
+        where: (u, { eq }) => eq(u.id, user.id),
+        columns: { hbar_balance: true },
+      });
+
+      return { txId, hashscanLink: hashscanUrl(txId), newBalance: updated?.hbar_balance ?? input.amount_hbar };
     }),
 
   // Lock escrow when task is created

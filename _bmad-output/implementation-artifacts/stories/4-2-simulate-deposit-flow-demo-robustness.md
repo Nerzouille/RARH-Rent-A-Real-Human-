@@ -1,6 +1,6 @@
 # Story 4.2: Simulate Deposit Flow (Demo Robustness)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -54,6 +54,17 @@ So that I can instantly fund my account for a demo task without using an externa
 - [x] Task 4: Handle the "no hedera_account_id" edge case for demo (AC: #1)
   - [x] 4.1 In the `simulateDeposit` mutation, if user has no `hedera_account_id`, perform a self-transfer on the platform account (memo: `simulate-deposit:demo:50HBAR`) and update the DB balance — this is the demo path since users don't have real Hedera accounts
   - [x] 4.2 Update `src/lib/core/hedera.ts` `simulateDeposit()` to accept an optional recipientAccountId (if null, do a self-transfer with memo)
+
+### Review Findings
+
+- [x] [Review][Patch] Race condition TOCTOU on balance update — use SQL increment instead of read-then-write [src/server/routers/payment.ts]
+- [x] [Review][Patch] Toast hardcodes "50 HBAR" — extracted DEPOSIT_AMOUNT constant [src/components/simulate-deposit-button.tsx]
+- [x] [Review][Patch] Hashscan URL formatting — split on @ and replace dot in timestamp part only [src/lib/core/hedera.ts]
+- [x] [Review][Defer] DB update failure after successful Hedera TX has no compensation — deferred, needs design decision
+- [x] [Review][Defer] releasePayment has no authorization check — deferred, scope story 4.4
+- [x] [Review][Defer] lockEscrow does not deduct from client balance — deferred, scope story 4.3
+- [x] [Review][Defer] lockEscrow throws raw Error instead of TRPCError — deferred, pre-existing
+- [x] [Review][Defer] Same TOCTOU race in releasePayment — deferred, scope story 4.4
 
 ## Dev Notes
 

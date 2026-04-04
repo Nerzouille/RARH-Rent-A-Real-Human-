@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
 
+const DEPOSIT_AMOUNT = 50;
+
 export function SimulateDepositButton() {
   const [lastTx, setLastTx] = useState<{ txId: string; hashscanLink: string } | null>(null);
   const utils = trpc.useUtils();
@@ -13,7 +15,7 @@ export function SimulateDepositButton() {
     onSuccess: (data) => {
       setLastTx({ txId: data.txId, hashscanLink: data.hashscanLink });
       utils.payment.getBalance.invalidate();
-      toast.success(`Deposited 50 HBAR`, {
+      toast.success(`Deposited ${DEPOSIT_AMOUNT} HBAR`, {
         description: `New balance: ${data.newBalance} HBAR`,
         action: {
           label: "View on Hashscan",
@@ -29,12 +31,12 @@ export function SimulateDepositButton() {
   return (
     <div className="flex flex-col gap-3">
       <Button
-        onClick={() => deposit.mutate({ amount_hbar: 50 })}
+        onClick={() => deposit.mutate({ amount_hbar: DEPOSIT_AMOUNT })}
         disabled={deposit.isPending}
         variant="default"
         className="w-full"
       >
-        {deposit.isPending ? "Processing on Hedera..." : "Simulate 50 HBAR Deposit"}
+        {deposit.isPending ? "Processing on Hedera..." : `Simulate ${DEPOSIT_AMOUNT} HBAR Deposit`}
       </Button>
 
       {lastTx && (
