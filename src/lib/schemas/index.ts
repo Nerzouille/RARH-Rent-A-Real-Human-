@@ -35,6 +35,31 @@ export const TaskStatusSchema = z.enum([
   "refunded",
 ]);
 
+export const ClientTypeSchema = z.enum(["human", "agent"]);
+
+// Full task shape as returned by the DB (dates serialized as ISO strings over tRPC)
+export const TaskSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  budget_hbar: z.number().int(),
+  deadline: z.string().or(z.date()),
+  status: TaskStatusSchema,
+  client_type: ClientTypeSchema,
+  client_nullifier: z.string().nullable(),
+  client_agent_wallet: z.string().nullable(),
+  client_agent_owner_nullifier: z.string().nullable(),
+  worker_nullifier: z.string().nullable(),
+  escrow_tx_id: z.string().nullable(),
+  payment_tx_id: z.string().nullable(),
+  created_at: z.string().or(z.date()),
+  updated_at: z.string().or(z.date()),
+});
+
+export type Task = z.infer<typeof TaskSchema>;
+export type TaskStatus = z.infer<typeof TaskStatusSchema>;
+export type ClientType = z.infer<typeof ClientTypeSchema>;
+
 // ─── Agent ────────────────────────────────────────────────────────────────────
 export const AgentCreateTaskSchema = CreateTaskSchema.extend({
   agent_wallet: z.string(),
