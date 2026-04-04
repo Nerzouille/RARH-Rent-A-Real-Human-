@@ -49,7 +49,7 @@ development_status:
   1-1-setup-world-id-staging-and-mock-mode: done
   1-2-worker-registration-with-idkit-widget: done
   1-3-server-side-proof-validation-and-session: done
-  1-4-user-profile-and-verification-badge: backlog
+  1-4-user-profile-and-verification-badge: done
   1-5-judge-friendly-error-handling-demo: backlog
   epic-1-retrospective: optional
 
