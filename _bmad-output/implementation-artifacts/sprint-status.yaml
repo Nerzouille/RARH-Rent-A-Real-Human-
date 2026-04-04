@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-04
-last_updated: 2026-04-04T17:00:00Z
+last_updated: 2026-04-04T18:10:00Z
 
 
 project: RARH-Rent-A-Real-Human-
@@ -48,7 +48,7 @@ development_status:
   epic-1: in-progress
   1-1-setup-world-id-staging-and-mock-mode: done
   1-2-worker-registration-with-idkit-widget: done
-  1-3-server-side-proof-validation-and-session: backlog
+  1-3-server-side-proof-validation-and-session: ready-for-dev
   1-4-user-profile-and-verification-badge: backlog
   1-5-judge-friendly-error-handling-demo: backlog
   epic-1-retrospective: optional
