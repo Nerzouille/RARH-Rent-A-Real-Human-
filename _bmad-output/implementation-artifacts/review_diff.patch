@@ -1,0 +1,1454 @@
+diff --git a/src/app/admin/page.tsx b/src/app/admin/page.tsx
+new file mode 100644
+index 0000000..58171aa
+--- /dev/null
++++ b/src/app/admin/page.tsx
+@@ -0,0 +1,147 @@
++"use client";
++
++import { useState } from "react";
++import Link from "next/link";
++import { toast } from "sonner";
++import { Button } from "@/components/ui/button";
++
++type ResetResult = {
++  success: boolean;
++  message: string;
++  seeded: { users: number; tasks: number } | null;
++  timestamp: string;
++};
++
++async function callReset(seed: boolean): Promise<ResetResult> {
++  const url = seed ? "/api/admin/reset?seed=true" : "/api/admin/reset";
++  const res = await fetch(url, {
++    method: "POST",
++    headers: {
++      "x-admin-key": process.env.NEXT_PUBLIC_ADMIN_RESET_KEY ?? "",
++    },
++  });
++  if (!res.ok) {
++    const err = await res.json();
++    throw new Error(err.error ?? "Reset failed");
++  }
++  return res.json();
++}
++
++export default function AdminPage() {
++  const [loading, setLoading] = useState<"reset" | "seed" | null>(null);
++  const [lastResult, setLastResult] = useState<ResetResult | null>(null);
++
++  async function handleReset(withSeed: boolean) {
++    const key = withSeed ? "seed" : "reset";
++    setLoading(key);
++    try {
++      const result = await callReset(withSeed);
++      setLastResult(result);
++      toast.success(withSeed ? "Reset & seeded" : "Platform reset", {
++        description: result.message,
++      });
++    } catch (err) {
++      toast.error("Reset failed", {
++        description: err instanceof Error ? err.message : "Unknown error",
++      });
++    } finally {
++      setLoading(null);
++    }
++  }
++
++  return (
++    <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black px-6 py-12">
++      <div className="w-full max-w-lg space-y-8">
++
++        {/* Header */}
++        <div className="text-center space-y-2">
++          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
++            Admin
++          </p>
++          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
++            Demo Reset
++          </h1>
++          <p className="text-sm text-zinc-500 dark:text-zinc-400">
++            Clear all data for a clean judge demo loop
++          </p>
++        </div>
++
++        {/* Warning */}
++        <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
++          <span className="font-semibold">Admin-only — </span>
++          do not share this URL. All data will be permanently deleted.
++        </div>
++
++        {/* Actions */}
++        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4">
++          <div className="space-y-1">
++            <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">
++              Reset Platform
++            </h2>
++            <p className="text-xs text-zinc-500 dark:text-zinc-400">
++              Deletes all tasks, users, and nullifiers. Greenfield state — no demo data.
++            </p>
++          </div>
++          <Button
++            variant="destructive"
++            className="w-full"
++            disabled={loading !== null}
++            onClick={() => handleReset(false)}
++          >
++            {loading === "reset" ? "Resetting..." : "Reset Platform"}
++          </Button>
++
++          <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 space-y-1">
++            <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">
++              Reset & Seed Demo Data
++            </h2>
++            <p className="text-xs text-zinc-500 dark:text-zinc-400">
++              Clears everything then re-populates with demo users and tasks. Use this for the fastest judge loop.
++            </p>
++          </div>
++          <Button
++            className="w-full bg-amber-600 text-white hover:bg-amber-700"
++            disabled={loading !== null}
++            onClick={() => handleReset(true)}
++          >
++            {loading === "seed" ? "Resetting & Seeding..." : "Reset & Seed Demo Data"}
++          </Button>
++        </div>
++
++        {/* Last result */}
++        {lastResult && (
++          <div className="rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950 px-4 py-3 space-y-1">
++            <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
++              {lastResult.message}
++            </p>
++            {lastResult.seeded && (
++              <p className="text-xs text-emerald-700 dark:text-emerald-400">
++                Seeded: {lastResult.seeded.users} users · {lastResult.seeded.tasks} tasks
++              </p>
++            )}
++            <p className="text-xs text-emerald-600 dark:text-emerald-500">
++              {new Date(lastResult.timestamp).toLocaleTimeString()}
++            </p>
++          </div>
++        )}
++
++        {/* Navigation */}
++        <div className="flex justify-center gap-4 pt-2 text-sm">
++          <Link
++            href="/judges"
++            className="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 underline underline-offset-4"
++          >
++            Judges Dashboard
++          </Link>
++          <Link
++            href="/tasks"
++            className="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 underline underline-offset-4"
++          >
++            Task List
++          </Link>
++        </div>
++
++      </div>
++    </div>
++  );
++}
+diff --git a/src/app/api/admin/reset/route.ts b/src/app/api/admin/reset/route.ts
+index 6395532..011571d 100644
+--- a/src/app/api/admin/reset/route.ts
++++ b/src/app/api/admin/reset/route.ts
+@@ -1,6 +1,7 @@
+ import { NextResponse, type NextRequest } from "next/server";
+ import { db } from "@/lib/db";
+ import { users, tasks, nullifiers } from "@/server/db/schema";
++import { runSeed } from "@/server/db/seed";
+ 
+ export async function POST(req: NextRequest) {
+   const key = req.headers.get("x-admin-key");
+@@ -9,13 +10,23 @@ export async function POST(req: NextRequest) {
+     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+   }
+ 
++  const shouldSeed = req.nextUrl.searchParams.get("seed") === "true";
++
+   await db.delete(nullifiers);
+   await db.delete(tasks);
+   await db.delete(users);
+ 
++  let seeded: { users: number; tasks: number } | null = null;
++  if (shouldSeed) {
++    seeded = await runSeed(db);
++  }
++
+   return NextResponse.json({
+     success: true,
+-    message: "Platform reset. Ready for next judge.",
++    message: shouldSeed
++      ? `Platform reset and seeded. ${seeded!.users} users, ${seeded!.tasks} tasks ready.`
++      : "Platform reset. Ready for next judge.",
++    seeded,
+     timestamp: new Date().toISOString(),
+   });
+ }
+diff --git a/src/app/api/judges/switch/route.ts b/src/app/api/judges/switch/route.ts
+new file mode 100644
+index 0000000..449718d
+--- /dev/null
++++ b/src/app/api/judges/switch/route.ts
+@@ -0,0 +1,166 @@
++import { NextResponse, type NextRequest } from "next/server";
++import { db } from "@/lib/db";
++import { users, nullifiers } from "@/server/db/schema";
++import { createSession, SESSION_COOKIE_OPTIONS } from "@/lib/core/session";
++
++const DEMO_AGENT_WALLET = "0x000000000000000000000000000000000a21a001";
++
++const PERSONAS = {
++  "kenji-worker": {
++    nullifier: "judge-demo-kenji-worker",
++    role: "worker" as const,
++    redirect: "/tasks",
++    hbar_balance: 0,
++  },
++  "sophie-client": {
++    nullifier: "judge-demo-sophie-client",
++    role: "client" as const,
++    redirect: "/client/new-task",
++    hbar_balance: 500,
++  },
++  "aria-agent": {
++    wallet: DEMO_AGENT_WALLET,
++  },
++} as const;
++
++type HumanPersona = "kenji-worker" | "sophie-client";
++type PersonaKey = keyof typeof PERSONAS;
++
++function isHumanPersona(key: PersonaKey): key is HumanPersona {
++  return key === "kenji-worker" || key === "sophie-client";
++}
++
++/**
++ * Upserts a demo persona user and nullifier, then creates a session.
++ * Returns the JWT token and redirect URL.
++ */
++async function switchToHuman(personaKey: HumanPersona) {
++  const persona = PERSONAS[personaKey];
++
++  const [user] = await db.transaction(async (tx) => {
++    const [u] = await tx
++      .insert(users)
++      .values({
++        nullifier: persona.nullifier,
++        role: persona.role,
++        hbar_balance: persona.hbar_balance,
++      })
++      .onConflictDoUpdate({
++        target: users.nullifier,
++        set: { role: persona.role, hbar_balance: persona.hbar_balance },
++      })
++      .returning();
++
++    await tx
++      .insert(nullifiers)
++      .values({ nullifier: persona.nullifier, action: "register" })
++      .onConflictDoNothing();
++
++    return [u];
++  });
++
++  const token = await createSession({
++    nullifier: user.nullifier,
++    role: user.role,
++    userId: user.id,
++  });
++
++  return { token, redirect: persona.redirect, user };
++}
++
++/**
++ * Triggers an agent task creation via the MCP endpoint.
++ */
++async function triggerAgent(req: NextRequest) {
++  const agentWallet = PERSONAS["aria-agent"].wallet;
++  const origin = req.nextUrl.origin;
++
++  const mcpBody = {
++    jsonrpc: "2.0",
++    id: 1,
++    method: "tools/call",
++    params: {
++      name: "create_task",
++      arguments: {
++        title: "Demo: Translate landing page to French",
++        description:
++          "Translate the HumanProof landing page copy into French for the ETHGlobal Cannes demo.",
++        budget_hbar: 50,
++        deadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
++      },
++    },
++  };
++
++  const mcpResponse = await fetch(`${origin}/api/mcp`, {
++    method: "POST",
++    headers: {
++      "Content-Type": "application/json",
++      "x-agentkit-auth": `AgentKit ${agentWallet}`,
++    },
++    body: JSON.stringify(mcpBody),
++  });
++
++  const result = await mcpResponse.json();
++
++  let taskId: string | null = null;
++  let escrowTxId: string | null = null;
++  try {
++    const content = result?.result?.content?.[0]?.text;
++    if (content) {
++      const parsed = JSON.parse(content);
++      taskId = parsed?.taskId ?? null;
++      escrowTxId = parsed?.escrowTxId ?? null;
++    }
++  } catch {
++    // MCP response not parseable, leave taskId/escrowTxId null
++  }
++
++  return { taskId, escrowTxId, agentWallet };
++}
++
++export async function POST(req: NextRequest) {
++  const adminKey = req.headers.get("x-admin-key");
++  if (adminKey !== process.env.ADMIN_RESET_KEY) {
++    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
++  }
++
++  let body: Record<string, unknown>;
++  try {
++    body = await req.json();
++  } catch {
++    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
++  }
++  const persona = body.persona as PersonaKey | undefined;
++
++  if (!persona || !(persona in PERSONAS)) {
++    return NextResponse.json(
++      { error: "Invalid persona. Use: kenji-worker, sophie-client, or aria-agent" },
++      { status: 400 }
++    );
++  }
++
++  if (isHumanPersona(persona)) {
++    const { token, redirect, user } = await switchToHuman(persona);
++
++    const response = NextResponse.json({
++      success: true,
++      persona,
++      redirect,
++      user: { id: user.id, nullifier: user.nullifier, role: user.role },
++    });
++    response.cookies.set("session", token, SESSION_COOKIE_OPTIONS);
++
++    return response;
++  }
++
++  // aria-agent
++  const { taskId, escrowTxId, agentWallet } = await triggerAgent(req);
++
++  return NextResponse.json({
++    success: true,
++    persona: "aria-agent",
++    agentWallet,
++    taskId,
++    escrowTxId,
++  });
++}
+diff --git a/src/app/judges/page.tsx b/src/app/judges/page.tsx
+new file mode 100644
+index 0000000..5dd1f35
+--- /dev/null
++++ b/src/app/judges/page.tsx
+@@ -0,0 +1,180 @@
++"use client";
++
++import { useState } from "react";
++import { useRouter } from "next/navigation";
++import { toast } from "sonner";
++import { trpc } from "@/lib/trpc/client";
++import { Button } from "@/components/ui/button";
++
++const PERSONAS = [
++  {
++    key: "kenji-worker",
++    name: "Kenji",
++    role: "Worker",
++    description: "Verified human worker. Claims tasks and earns HBAR.",
++    color: "bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800",
++    buttonClass: "bg-emerald-600 text-white hover:bg-emerald-700",
++  },
++  {
++    key: "sophie-client",
++    name: "Sophie",
++    role: "Client",
++    description: "Human client. Posts tasks with HBAR escrow.",
++    color: "bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800",
++    buttonClass: "bg-blue-600 text-white hover:bg-blue-700",
++  },
++  {
++    key: "aria-agent",
++    name: "Aria",
++    role: "AI Agent",
++    description: "Autonomous agent. Creates tasks via MCP protocol.",
++    color: "bg-violet-50 border-violet-200 dark:bg-violet-950 dark:border-violet-800",
++    buttonClass: "bg-violet-600 text-white hover:bg-violet-700",
++  },
++] as const;
++
++async function callSwitch(persona: string) {
++  const res = await fetch("/api/judges/switch", {
++    method: "POST",
++    headers: {
++      "Content-Type": "application/json",
++      "x-admin-key": process.env.NEXT_PUBLIC_ADMIN_RESET_KEY ?? "",
++    },
++    body: JSON.stringify({ persona }),
++  });
++  if (!res.ok) {
++    const err = await res.json();
++    throw new Error(err.error ?? "Switch failed");
++  }
++  return res.json();
++}
++
++async function callReset() {
++  const res = await fetch("/api/admin/reset", {
++    method: "POST",
++    headers: {
++      "x-admin-key": process.env.NEXT_PUBLIC_ADMIN_RESET_KEY ?? "",
++    },
++  });
++  if (!res.ok) throw new Error("Reset failed");
++  return res.json();
++}
++
++export default function JudgesDashboard() {
++  const router = useRouter();
++  const [loading, setLoading] = useState<string | null>(null);
++  const me = trpc.auth.me.useQuery();
++
++  async function handlePersonaClick(personaKey: string) {
++    setLoading(personaKey);
++    try {
++      const result = await callSwitch(personaKey);
++
++      if (personaKey === "aria-agent") {
++        const taskInfo = result.taskId ? `Task ID: ${result.taskId}` : "Task created";
++        const escrowInfo = result.escrowTxId ? ` | Escrow: ${result.escrowTxId}` : "";
++        toast.success("Agent Aria triggered a task", {
++          description: `${taskInfo}${escrowInfo}`,
++        });
++      } else if (result.redirect) {
++        toast.success(`Switched to ${result.user?.role ?? personaKey}`);
++        router.push(result.redirect);
++        return;
++      }
++    } catch (err) {
++      toast.error("Switch failed", {
++        description: err instanceof Error ? err.message : "Unknown error",
++      });
++    } finally {
++      setLoading(null);
++      me.refetch();
++    }
++  }
++
++  async function handleReset() {
++    setLoading("reset");
++    try {
++      await callReset();
++      toast.success("Platform reset complete");
++      me.refetch();
++    } catch {
++      toast.error("Reset failed");
++    } finally {
++      setLoading(null);
++    }
++  }
++
++  return (
++    <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black px-6 py-12">
++      <div className="w-full max-w-3xl space-y-8">
++        <div className="text-center space-y-2">
++          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
++            Demo Control Panel
++          </p>
++          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
++            Judges Dashboard
++          </h1>
++          <p className="text-sm text-zinc-500 dark:text-zinc-400">
++            One-click session switching for the 3 bounty flows
++          </p>
++        </div>
++
++        {/* Current session */}
++        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 text-center">
++          <span className="text-xs uppercase tracking-wider text-zinc-400">Current Session</span>
++          <p className="mt-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
++            {me.data
++              ? `${me.data.role} (${me.data.nullifier.slice(0, 20)}...)`
++              : "No session"}
++          </p>
++        </div>
++
++        {/* Persona cards */}
++        <div className="grid gap-4 sm:grid-cols-3">
++          {PERSONAS.map((p) => (
++            <div
++              key={p.key}
++              className={`rounded-xl border p-5 flex flex-col items-center gap-3 ${p.color}`}
++            >
++              <div className="text-center">
++                <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
++                  {p.name}
++                </h2>
++                <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
++                  {p.role}
++                </span>
++              </div>
++              <p className="text-xs text-zinc-600 dark:text-zinc-400 text-center leading-relaxed">
++                {p.description}
++              </p>
++              <Button
++                className={`w-full mt-auto ${p.buttonClass}`}
++                size="lg"
++                disabled={loading !== null}
++                onClick={() => handlePersonaClick(p.key)}
++              >
++                {loading === p.key
++                  ? "Switching..."
++                  : p.key === "aria-agent"
++                    ? `Trigger Agent ${p.name}`
++                    : `Login as ${p.name}`}
++              </Button>
++            </div>
++          ))}
++        </div>
++
++        {/* Reset */}
++        <div className="flex justify-center pt-4">
++          <Button
++            variant="destructive"
++            size="lg"
++            disabled={loading !== null}
++            onClick={handleReset}
++          >
++            {loading === "reset" ? "Resetting..." : "Reset Platform"}
++          </Button>
++        </div>
++      </div>
++    </div>
++  );
++}
+diff --git a/src/app/tasks/[id]/page.tsx b/src/app/tasks/[id]/page.tsx
+index e31119f..dc8d9ac 100644
+--- a/src/app/tasks/[id]/page.tsx
++++ b/src/app/tasks/[id]/page.tsx
+@@ -2,20 +2,50 @@
+ 
+ import { use, useState } from "react";
+ import Link from "next/link";
+-import confetti from "canvas-confetti";
+ import { trpc } from "@/lib/trpc/client";
+ import { STATUS_COLORS } from "@/lib/constants";
++import { AuditTrail } from "@/components/AuditTrail";
+ 
+-/**
+- * Helper to format Hashscan URLs from Hedera transaction IDs.
+- * Handles mock IDs by returning a plain string instead of a broken link.
+- */
+-function hashscanUrl(txId: string): string {
+-  if (txId.startsWith("mock-")) return "";
+-  const [accountPart, timestampPart] = txId.split("@");
+-  if (!timestampPart) return `https://hashscan.io/testnet/transaction/${txId}`;
+-  const formatted = `${accountPart}-${timestampPart.replace(".", "-")}`;
+-  return `https://hashscan.io/testnet/transaction/${formatted}`;
++function getTaskActionError(
++  action: "claim" | "markComplete" | "validate",
++  message: string
++): string {
++  const normalized = message.toLowerCase();
++
++  if (action === "claim") {
++    if (normalized.includes("already claimed")) {
++      return "Someone else just claimed this task. Refreshing...";
++    }
++    if (normalized.includes("only workers")) {
++      return "Only workers can claim tasks.";
++    }
++    return "Failed to claim task. Please try again.";
++  }
++
++  if (action === "markComplete") {
++    if (normalized.includes("assigned worker")) {
++      return "Only the assigned worker can mark this task complete.";
++    }
++    if (normalized.includes("claimed status")) {
++      return "This task can no longer be marked complete.";
++    }
++    return "Failed to submit completion. Please try again.";
++  }
++
++  if (normalized.includes("task client")) {
++    return "Only the task client can validate this task.";
++  }
++  if (normalized.includes("completed status")) {
++    return "This task is not ready for validation yet.";
++  }
++  if (normalized.includes("already released")) {
++    return "Payment has already been released for this task.";
++  }
++  if (normalized.includes("mcp api")) {
++    return "Agent-posted tasks must be validated via the MCP API.";
++  }
++
++  return "Failed to release payment. Please try again.";
+ }
+ 
+ /**
+@@ -24,30 +54,41 @@ function hashscanUrl(txId: string): string {
+ export default function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
+   const { id } = use(params);
+   const utils = trpc.useUtils();
++  const { data: session } = trpc.auth.me.useQuery();
+   const { data: task, isLoading } = trpc.task.get.useQuery(
+     { id },
+     {
+       refetchInterval: (query) => {
+-        const status = query.state.data?.status;
+-        return status === "claimed" ? 5000 : false;
++        const queryTask = query.state.data;
++        const shouldPoll =
++          session?.role === "client" &&
++          !!session.nullifier &&
++          queryTask?.status === "claimed" &&
++          queryTask.client_nullifier === session.nullifier;
++        return shouldPoll ? 5000 : false;
+       },
+     }
+   );
+-  const { data: session } = trpc.auth.me.useQuery();
+   const [claimError, setClaimError] = useState<string | null>(null);
+   const [markCompleteError, setMarkCompleteError] = useState<string | null>(null);
+   const [validateError, setValidateError] = useState<string | null>(null);
++  const [recentValidation, setRecentValidation] = useState<{
++    paymentTxId: string | null;
++    hashscanLink: string;
++  } | null>(null);
++
++  const clearErrors = () => {
++    setClaimError(null);
++    setMarkCompleteError(null);
++    setValidateError(null);
++  };
+ 
+   const { mutate: claimTask, isPending: isClaiming } = trpc.task.claim.useMutation({
+     onSuccess: () => {
+       utils.task.get.invalidate({ id });
+     },
+     onError: (err) => {
+-      // Avoid exposing raw tRPC/DB errors; map to user-friendly messages
+-      const msg = err.message.includes("already claimed")
+-        ? "Someone else just claimed this task. Refreshing..."
+-        : "Failed to claim task. Please try again.";
+-      setClaimError(msg);
++      setClaimError(getTaskActionError("claim", err.message));
+     },
+   });
+ 
+@@ -55,18 +96,28 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
+     onSuccess: () => {
+       utils.task.get.invalidate({ id });
+     },
+-    onError: () => {
+-      setMarkCompleteError("Failed to submit completion. Please try again.");
++    onError: (err) => {
++      setMarkCompleteError(getTaskActionError("markComplete", err.message));
+     },
+   });
+ 
+   const { mutate: validateTask, isPending: isValidating } = trpc.task.validate.useMutation({
+-    onSuccess: () => {
+-      confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
++    onSuccess: (data) => {
++      setRecentValidation({
++        paymentTxId: data.payment_tx_id ?? null,
++        hashscanLink: data.hashscanLink,
++      });
+       utils.task.get.invalidate({ id });
++      void import("canvas-confetti")
++        .then(({ default: confetti }) => {
++          confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
++        })
++        .catch(() => {
++          // Confetti is cosmetic. Do not block the validated-state refresh if it fails to load.
++        });
+     },
+-    onError: () => {
+-      setValidateError("Failed to release payment. Please try again.");
++    onError: (err) => {
++      setValidateError(getTaskActionError("validate", err.message));
+     },
+   });
+ 
+@@ -95,6 +146,16 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
+     month: "short",
+     year: "numeric",
+   });
++  const showRecentValidationSuccess =
++    task.status === "validated" &&
++    !!recentValidation &&
++    recentValidation.paymentTxId === task.payment_tx_id;
++  const paymentLink =
++    showRecentValidationSuccess && recentValidation.hashscanLink
++      ? recentValidation.hashscanLink
++      : task.payment_tx_id
++        ? hashscanUrl(task.payment_tx_id)
++        : "";
+ 
+   return (
+     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
+@@ -150,7 +211,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
+                 Payment is held in escrow until your work is validated.
+               </p>
+               <button
+-                onClick={() => { setClaimError(null); claimTask({ taskId: task.id }); }}
++                onClick={() => { clearErrors(); claimTask({ taskId: task.id }); }}
+                 disabled={isClaiming}
+                 className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+               >
+@@ -158,11 +219,11 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
+               </button>
+               {claimError && <p className="text-sm text-red-600">{claimError}</p>}
+             </>
+-          ) : session.role === "worker" && task.status === "claimed" && task.worker_nullifier === session.nullifier ? (
++          ) : session.role === "worker" && task.status === "claimed" && !!session.nullifier && task.worker_nullifier === session.nullifier ? (
+             <>
+               <p className="text-sm text-zinc-500">Complete the work, then tap below.</p>
+               <button
+-                onClick={() => { setMarkCompleteError(null); markComplete({ taskId: task.id }); }}
++                onClick={() => { clearErrors(); markComplete({ taskId: task.id }); }}
+                 disabled={isMarkingComplete}
+                 className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+               >
+@@ -170,11 +231,13 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
+               </button>
+               {markCompleteError && <p className="text-sm text-red-600">{markCompleteError}</p>}
+             </>
+-          ) : session.role === "worker" && task.status === "completed" && task.worker_nullifier === session.nullifier ? (
+-            <p className="text-sm font-medium text-emerald-600">
+-              ✅ Completion submitted! Awaiting client validation.
+-            </p>
+-          ) : session.role === "worker" && task.status === "validated" && task.worker_nullifier === session.nullifier ? (
++          ) : session.role === "worker" && task.status === "completed" && !!session.nullifier && task.worker_nullifier === session.nullifier ? (
++            <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 px-3 py-2">
++              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-400">
++                ✅ Completion submitted! Awaiting client validation.
++              </p>
++            </div>
++          ) : session.role === "worker" && task.status === "validated" && !!session.nullifier && task.worker_nullifier === session.nullifier ? (
+             <p className="text-sm font-medium text-emerald-600">
+               ✅ Task validated. Payment received.
+             </p>
+@@ -185,71 +248,67 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
+                 Browse other available tasks →
+               </Link>
+             </p>
+-          ) : session.role === "client" && task.client_nullifier === session.nullifier && task.status === "claimed" ? (
+-            <p className="text-sm text-zinc-500">
+-              ⏳ Worker is completing the task. You&apos;ll be notified when they&apos;re done.
+-            </p>
+-          ) : session.role === "client" && task.client_nullifier === session.nullifier && task.status === "completed" ? (
++          ) : session.role === "client" && !!session.nullifier && task.client_nullifier === session.nullifier ? (
+             <>
+-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+-                Worker has marked this complete. Review and validate to release payment to the worker.
+-              </p>
+-              <button
+-                onClick={() => { setValidateError(null); validateTask({ taskId: task.id }); }}
+-                disabled={isValidating}
+-                className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+-              >
+-                {isValidating ? "Releasing payment…" : "Validate & Release"}
+-              </button>
+-              {validateError && <p className="text-sm text-red-600">{validateError}</p>}
++              {task.status === "open" ? (
++                <p className="text-sm text-zinc-500 italic">
++                  Waiting for workers to claim this task...
++                </p>
++              ) : task.status === "claimed" ? (
++                <p className="text-sm text-zinc-500">
++                  ⏳ Worker is completing the task. You&apos;ll be notified when they&apos;re done.
++                </p>
++              ) : task.status === "completed" ? (
++                <>
++                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
++                    Worker has marked this complete. Review and validate to release payment.
++                  </p>
++                  <button
++                    onClick={() => {
++                      clearErrors();
++                      setRecentValidation(null);
++                      validateTask({ taskId: task.id });
++                    }}
++                    disabled={isValidating}
++                    className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
++                  >
++                    {isValidating ? "Releasing payment…" : "Validate & Release"}
++                  </button>
++                  {validateError && <p className="text-sm text-red-600">{validateError}</p>}
++                </>
++              ) : task.status === "validated" ? (
++                <div className="flex flex-col gap-2">
++                  <p className="text-sm font-medium text-emerald-600">
++                    {showRecentValidationSuccess
++                      ? "✅ Task complete. Payment released to worker."
++                      : "✅ Task complete. Payment released."}
++                  </p>
++                  {paymentLink && (
++                    <a
++                      href={paymentLink}
++                      target="_blank"
++                      rel="noopener noreferrer"
++                      className="text-xs text-indigo-600 hover:underline font-mono"
++                    >
++                      View payment on Hashscan ↗
++                    </a>
++                  )}
++                </div>
++              ) : null}
+             </>
+-          ) : session.role === "client" && task.client_nullifier === session.nullifier && task.status === "validated" ? (
+-            <p className="text-sm font-medium text-emerald-600">
+-              ✅ Task complete. Payment released to worker.
+-            </p>
+           ) : null}
+         </div>
+ 
+-        {/* Hedera TX section — escrow + payment */}
+-        {(task.escrow_tx_id || task.payment_tx_id) && (
+-          <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 px-4 py-3 flex flex-col gap-2">
+-            <p className="text-xs text-zinc-500">Hedera</p>
+-            {task.escrow_tx_id && (
+-              <div>
+-                <p className="text-xs text-zinc-400 mb-0.5">Escrow TX</p>
+-                {task.escrow_tx_id.startsWith("mock-") ? (
+-                  <p className="text-xs text-zinc-400 font-mono">{task.escrow_tx_id} (mock)</p>
+-                ) : (
+-                  <a
+-                    href={hashscanUrl(task.escrow_tx_id)}
+-                    target="_blank"
+-                    rel="noopener noreferrer"
+-                    className="text-xs text-indigo-600 hover:underline font-mono"
+-                  >
+-                    {task.escrow_tx_id.slice(0, 20)}… ↗
+-                  </a>
+-                )}
+-              </div>
+-            )}
+-            {task.payment_tx_id && (
+-              <div>
+-                <p className="text-xs text-zinc-400 mb-0.5">Payment TX</p>
+-                {task.payment_tx_id.startsWith("mock-") ? (
+-                  <p className="text-xs text-zinc-400 font-mono">{task.payment_tx_id} (mock)</p>
+-                ) : (
+-                  <a
+-                    href={hashscanUrl(task.payment_tx_id)}
+-                    target="_blank"
+-                    rel="noopener noreferrer"
+-                    className="text-xs text-indigo-600 hover:underline font-mono"
+-                  >
+-                    {task.payment_tx_id.slice(0, 20)}… ↗
+-                  </a>
+-                )}
+-              </div>
+-            )}
+-          </div>
+-        )}
++        <AuditTrail
++          clientType={task.client_type}
++          clientNullifier={task.client_nullifier}
++          clientAgentWallet={task.client_agent_wallet}
++          clientAgentOwnerNullifier={task.client_agent_owner_nullifier}
++          workerNullifier={task.worker_nullifier}
++          escrowTxId={task.escrow_tx_id}
++          paymentTxId={task.payment_tx_id}
++          status={task.status}
++        />
+       </main>
+     </div>
+   );
+diff --git a/src/components/AuditTrail.tsx b/src/components/AuditTrail.tsx
+new file mode 100644
+index 0000000..1b6ba2b
+--- /dev/null
++++ b/src/components/AuditTrail.tsx
+@@ -0,0 +1,254 @@
++"use client";
++
++import { useState } from "react";
++import {
++  ShieldCheck,
++  Bot,
++  Landmark,
++  ArrowRightLeft,
++  ChevronDown,
++  ChevronUp,
++  ExternalLink,
++} from "lucide-react";
++import { hashscanUrl } from "@/lib/core/hashscan";
++
++interface AuditTrailProps {
++  clientType: "human" | "agent";
++  clientNullifier: string | null;
++  clientAgentWallet: string | null;
++  clientAgentOwnerNullifier: string | null;
++  workerNullifier: string | null;
++  escrowTxId: string | null;
++  paymentTxId: string | null;
++  status: string;
++}
++
++type EventStatus = "success" | "pending" | "inactive" | "warning";
++
++interface AuditEvent {
++  id: string;
++  icon: React.ReactNode;
++  label: string;
++  status: EventStatus;
++  detail: string | null;
++  link: string | null;
++}
++
++function truncate(str: string, start = 6, end = 4): string {
++  if (str.length <= start + end + 3) return str;
++  return `${str.slice(0, start)}...${str.slice(-end)}`;
++}
++
++const STATUS_STYLES: Record<EventStatus, { dot: string; text: string; bg: string }> = {
++  success: {
++    dot: "bg-emerald-500",
++    text: "text-emerald-700 dark:text-emerald-300",
++    bg: "bg-emerald-50 dark:bg-emerald-900/20",
++  },
++  pending: {
++    dot: "bg-amber-500 animate-pulse",
++    text: "text-amber-700 dark:text-amber-300",
++    bg: "bg-amber-50 dark:bg-amber-900/20",
++  },
++  inactive: {
++    dot: "bg-zinc-300 dark:bg-zinc-600",
++    text: "text-zinc-400 dark:text-zinc-500",
++    bg: "bg-zinc-50 dark:bg-zinc-800/50",
++  },
++  warning: {
++    dot: "bg-amber-500",
++    text: "text-amber-700 dark:text-amber-300",
++    bg: "bg-amber-50 dark:bg-amber-900/20",
++  },
++};
++
++function buildEvents(props: AuditTrailProps): AuditEvent[] {
++  const events: AuditEvent[] = [];
++
++  if (props.clientType === "human") {
++    events.push({
++      id: "client-worldid",
++      icon: <ShieldCheck className="h-4 w-4" />,
++      label: "Client World ID",
++      status: props.clientNullifier ? "success" : "inactive",
++      detail: props.clientNullifier ? truncate(props.clientNullifier) : null,
++      link: null,
++    });
++  } else {
++    events.push({
++      id: "agent-auth",
++      icon: <Bot className="h-4 w-4" />,
++      label: "Agent Authenticated",
++      status: props.clientAgentWallet ? "success" : "inactive",
++      detail: props.clientAgentWallet ? truncate(props.clientAgentWallet) : null,
++      link: null,
++    });
++    events.push({
++      id: "agentbook-owner",
++      icon: <ShieldCheck className="h-4 w-4" />,
++      label: "AgentBook Owner",
++      status: props.clientAgentOwnerNullifier
++        ? "success"
++        : props.clientAgentWallet
++          ? "warning"
++          : "inactive",
++      detail: props.clientAgentOwnerNullifier
++        ? truncate(props.clientAgentOwnerNullifier)
++        : props.clientAgentWallet
++          ? "Offline / Not Registered"
++          : null,
++      link: null,
++    });
++  }
++
++  const workerStatuses = ["claimed", "completed", "validated"];
++  events.push({
++    id: "worker-worldid",
++    icon: <ShieldCheck className="h-4 w-4" />,
++    label: "Worker World ID",
++    status: props.workerNullifier
++      ? "success"
++      : workerStatuses.includes(props.status)
++        ? "pending"
++        : "inactive",
++    detail: props.workerNullifier ? truncate(props.workerNullifier) : null,
++    link: null,
++  });
++
++  const isMockEscrow = props.escrowTxId?.startsWith("mock-");
++  events.push({
++    id: "escrow",
++    icon: <Landmark className="h-4 w-4" />,
++    label: "Hedera Escrow",
++    status: props.escrowTxId ? "success" : "inactive",
++    detail: props.escrowTxId
++      ? isMockEscrow
++        ? `${props.escrowTxId} (mock)`
++        : truncate(props.escrowTxId, 10, 6)
++      : null,
++    link: props.escrowTxId && !isMockEscrow ? hashscanUrl(props.escrowTxId) : null,
++  });
++
++  const isMockPayment = props.paymentTxId?.startsWith("mock-");
++  const paymentPending = props.status === "validated" && !props.paymentTxId;
++  events.push({
++    id: "payment",
++    icon: <ArrowRightLeft className="h-4 w-4" />,
++    label: "Payment Released",
++    status: props.paymentTxId ? "success" : paymentPending ? "pending" : "inactive",
++    detail: props.paymentTxId
++      ? isMockPayment
++        ? `${props.paymentTxId} (mock)`
++        : truncate(props.paymentTxId, 10, 6)
++      : null,
++    link: props.paymentTxId && !isMockPayment ? hashscanUrl(props.paymentTxId) : null,
++  });
++
++  return events;
++}
++
++/**
++ * Visual audit trail showing cryptographic events for a task lifecycle.
++ * Displays World ID verifications, AgentBook lookups, and Hedera transactions
++ * with expandable details and Hashscan links.
++ */
++export function AuditTrail(props: AuditTrailProps) {
++  const [expanded, setExpanded] = useState(false);
++  const events = buildEvents(props);
++
++  const successCount = events.filter((e) => e.status === "success").length;
++  const totalCount = events.length;
++
++  return (
++    <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
++      <button
++        onClick={() => setExpanded(!expanded)}
++        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
++      >
++        <div className="flex items-center gap-2">
++          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
++            Audit Trail
++          </span>
++          <span className="text-xs text-zinc-500">
++            {successCount}/{totalCount} verified
++          </span>
++        </div>
++        <div className="flex items-center gap-2">
++          <div className="flex gap-1">
++            {events.map((e) => (
++              <span
++                key={e.id}
++                className={`h-2 w-2 rounded-full ${STATUS_STYLES[e.status].dot}`}
++                title={e.label}
++              />
++            ))}
++          </div>
++          {expanded ? (
++            <ChevronUp className="h-4 w-4 text-zinc-400" />
++          ) : (
++            <ChevronDown className="h-4 w-4 text-zinc-400" />
++          )}
++        </div>
++      </button>
++
++      {expanded && (
++        <div className="border-t border-zinc-100 dark:border-zinc-800 px-4 py-3 space-y-2">
++          {events.map((event, i) => {
++            const style = STATUS_STYLES[event.status];
++            return (
++              <div key={event.id} className="flex items-start gap-3">
++                <div className="flex flex-col items-center pt-0.5">
++                  <span className={`h-2.5 w-2.5 rounded-full ${style.dot} flex-shrink-0`} />
++                  {i < events.length - 1 && (
++                    <span className="w-px h-full min-h-[16px] bg-zinc-200 dark:bg-zinc-700" />
++                  )}
++                </div>
++
++                <div className={`flex-1 rounded-md px-3 py-2 ${style.bg}`}>
++                  <div className="flex items-center gap-2">
++                    <span className={style.text}>{event.icon}</span>
++                    <span className={`text-xs font-medium ${style.text}`}>
++                      {event.label}
++                    </span>
++                    {event.status === "success" && (
++                      <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
++                        Verified
++                      </span>
++                    )}
++                    {event.status === "pending" && (
++                      <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
++                        Pending
++                      </span>
++                    )}
++                    {event.status === "warning" && (
++                      <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
++                        Caution
++                      </span>
++                    )}
++                  </div>
++                  {event.detail && (
++                    <div className="mt-1 flex items-center gap-1">
++                      <span className="text-xs font-mono text-zinc-600 dark:text-zinc-400">
++                        {event.detail}
++                      </span>
++                      {event.link && (
++                        <a
++                          href={event.link}
++                          target="_blank"
++                          rel="noopener noreferrer"
++                          className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
++                        >
++                          <ExternalLink className="h-3 w-3" />
++                        </a>
++                      )}
++                    </div>
++                  )}
++                </div>
++              </div>
++            );
++          })}
++        </div>
++      )}
++    </div>
++  );
++}
+diff --git a/src/components/identity/AlreadyRegisteredPanel.tsx b/src/components/identity/AlreadyRegisteredPanel.tsx
+new file mode 100644
+index 0000000..90665c7
+--- /dev/null
++++ b/src/components/identity/AlreadyRegisteredPanel.tsx
+@@ -0,0 +1,89 @@
++"use client";
++
++import { useState } from "react";
++import { toast } from "sonner";
++import { trpc } from "@/lib/trpc/client";
++import { Button } from "@/components/ui/button";
++
++interface AlreadyRegisteredPanelProps {
++  onReset: () => void;
++}
++
++export function AlreadyRegisteredPanel({ onReset }: AlreadyRegisteredPanelProps) {
++  const [resetDone, setResetDone] = useState(false);
++  const resetMutation = trpc.auth.adminReset.useMutation({
++    onSuccess: () => {
++      setResetDone(true);
++      toast.success("Database reset. Ready for next judge!");
++    },
++    onError: () => {
++      toast.error("Reset failed — check ADMIN_RESET_KEY in .env.local");
++    },
++  });
++
++  if (resetDone) {
++    return (
++      <div className="w-full rounded-xl border border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 p-6 flex flex-col items-center gap-4 text-center">
++        <span className="text-3xl">✓</span>
++        <p className="font-semibold text-emerald-700 dark:text-emerald-400">
++          Platform reset complete
++        </p>
++        <p className="text-sm text-zinc-500 dark:text-zinc-400">
++          All users, tasks and nullifiers cleared. Ready for the next judge.
++        </p>
++        <Button variant="outline" size="sm" onClick={onReset} className="w-full">
++          Register now
++        </Button>
++      </div>
++    );
++  }
++
++  return (
++    <div className="w-full rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-6 flex flex-col gap-4">
++      {/* Header */}
++      <div className="flex items-start gap-3">
++        <span className="text-2xl mt-0.5">⚠</span>
++        <div>
++          <p className="font-semibold text-amber-800 dark:text-amber-300">
++            Identity Already Registered
++          </p>
++          <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
++            This World ID nullifier is already in the system — nullifier uniqueness is working correctly.
++          </p>
++        </div>
++      </div>
++
++      {/* Divider */}
++      <div className="border-t border-amber-200 dark:border-amber-700" />
++
++      {/* Judge explanation */}
++      <div className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1">
++        <p className="font-medium text-zinc-700 dark:text-zinc-300">What this means:</p>
++        <ul className="list-disc list-inside space-y-1 pl-1">
++          <li>Each World ID can only register once per action</li>
++          <li>Duplicate attempts are cryptographically rejected</li>
++          <li>No workaround is possible without resetting the demo DB</li>
++        </ul>
++      </div>
++
++      {/* Demo operator reset */}
++      <div className="rounded-lg bg-zinc-100 dark:bg-zinc-800 p-4 flex flex-col gap-2">
++        <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
++          Demo Operator
++        </p>
++        <p className="text-sm text-zinc-600 dark:text-zinc-300">
++          Reset the database to let the next judge register fresh.
++        </p>
++        <Button
++          variant="destructive"
++          size="sm"
++          onClick={() => resetMutation.mutate()}
++          disabled={resetMutation.isPending}
++          className="w-full mt-1"
++        >
++          {resetMutation.isPending ? "Resetting…" : "Reset Demo Database"}
++        </Button>
++      </div>
++    </div>
++  );
++}
+diff --git a/src/components/identity/RegisterWidget.tsx b/src/components/identity/RegisterWidget.tsx
+index d010025..29ccdae 100644
+--- a/src/components/identity/RegisterWidget.tsx
++++ b/src/components/identity/RegisterWidget.tsx
+@@ -7,6 +7,7 @@ import type { IDKitResult, RpContext } from "@worldcoin/idkit";
+ import { toast } from "sonner";
+ import { trpc } from "@/lib/trpc/client";
+ import { Button } from "@/components/ui/button";
++import { AlreadyRegisteredPanel } from "@/components/identity/AlreadyRegisteredPanel";
+ 
+ const isMock = process.env.NEXT_PUBLIC_MOCK_WORLDID === "true";
+ 
+@@ -23,6 +24,7 @@ export function RegisterWidget({
+   const [fetchError, setFetchError] = useState(false);
+ 
+   const registerMutation = trpc.auth.register.useMutation();
++  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
+ 
+   // Fetch RP context for staging/prod widget (not needed in mock mode)
+   useEffect(() => {
+@@ -57,14 +59,13 @@ export function RegisterWidget({
+ 
+   // ─── Error helper ───────────────────────────────────────────────────────────
+   function handleRegisterError(err: unknown) {
+-    // Improved error detection for tRPC
+     const errorMessage =
+       err && typeof err === "object" && "message" in err
+         ? (err as { message: string }).message
+         : "";
+ 
+     if (errorMessage === "HUMAN_ALREADY_REGISTERED") {
+-      toast.error("This World ID is already registered.");
++      setAlreadyRegistered(true);
+       return;
+     }
+ 
+@@ -86,6 +87,10 @@ export function RegisterWidget({
+     }
+   }
+ 
++  if (alreadyRegistered) {
++    return <AlreadyRegisteredPanel onReset={() => setAlreadyRegistered(false)} />;
++  }
++
+   if (isMock) {
+     return (
+       <Button
+diff --git a/src/server/db/seed.ts b/src/server/db/seed.ts
+index f3bef55..0ea9ad4 100644
+--- a/src/server/db/seed.ts
++++ b/src/server/db/seed.ts
+@@ -2,34 +2,21 @@ import postgres from "postgres";
+ import { drizzle } from "drizzle-orm/postgres-js";
+ import { users, nullifiers, tasks } from "./schema";
+ 
+-const DATABASE_URL =
+-  process.env.DATABASE_URL ||
+-  "postgresql://humanproof:humanproof@localhost:5432/humanproof";
+-
+-const client = postgres(DATABASE_URL);
+-const db = drizzle(client);
+-
+ // ─── Demo nullifiers (stable IDs for repeatable demo) ─────────────────────────
+ const NULLIFIER_WORKER_1 = "demo-nullifier-worker-alice-0001";
+ const NULLIFIER_WORKER_2 = "demo-nullifier-worker-bob-0002";
+ const NULLIFIER_CLIENT   = "demo-nullifier-client-corp-0003";
+ const NULLIFIER_AGENT_OWNER = "demo-nullifier-agent-owner-0004";
+ 
+-const now = new Date();
+-const inTwoDays = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+-const inOneWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+-const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+-
+-async function seed() {
+-  console.log("🌱 Seeding database...");
+-
+-  // ─── Truncate in order (FK-safe) ──────────────────────────────────────────
+-  await db.delete(tasks);
+-  await db.delete(nullifiers);
+-  await db.delete(users);
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export async function runSeed(db: any): Promise<{ users: number; tasks: number }> {
++  const now = new Date();
++  const inTwoDays = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
++  const inOneWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
++  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+ 
+   // ─── Users ────────────────────────────────────────────────────────────────
+-  await db.insert(users).values([
++  const insertedUsers = await db.insert(users).values([
+     {
+       nullifier: NULLIFIER_WORKER_1,
+       role: "worker",
+@@ -56,7 +43,7 @@ async function seed() {
+       hbar_balance: 300,
+       tasks_completed: 0,
+     },
+-  ]);
++  ]).returning();
+ 
+   // ─── Nullifiers (verified actions) ────────────────────────────────────────
+   await db.insert(nullifiers).values([
+@@ -68,8 +55,7 @@ async function seed() {
+   ]);
+ 
+   // ─── Tasks ────────────────────────────────────────────────────────────────
+-  await db.insert(tasks).values([
+-    // Open tasks — available to claim
++  const insertedTasks = await db.insert(tasks).values([
+     {
+       title: "Translate product description to French",
+       description:
+@@ -102,7 +88,6 @@ async function seed() {
+       client_agent_wallet: "0x000000000000000000000000000000000000BABE",
+       client_agent_owner_nullifier: NULLIFIER_AGENT_OWNER,
+     },
+-    // Claimed task — in progress
+     {
+       title: "Verify business address on Google Maps",
+       description:
+@@ -115,7 +100,6 @@ async function seed() {
+       worker_nullifier: NULLIFIER_WORKER_1,
+       escrow_tx_id: "0.0.12345@1700000000.000000000",
+     },
+-    // Validated task — full flow demo
+     {
+       title: "Answer a survey about AI tools",
+       description:
+@@ -130,9 +114,29 @@ async function seed() {
+       escrow_tx_id: "0.0.12346@1700000001.000000000",
+       payment_tx_id: "0.0.12347@1700000002.000000000",
+     },
+-  ]);
++  ]).returning();
++
++  return { users: insertedUsers.length, tasks: insertedTasks.length };
++}
++
++// ─── CLI entrypoint ───────────────────────────────────────────────────────────
++async function seed() {
++  const DATABASE_URL =
++    process.env.DATABASE_URL ||
++    "postgresql://humanproof:humanproof@localhost:5432/humanproof";
++
++  const client = postgres(DATABASE_URL);
++  const db = drizzle(client);
++
++  console.log("🌱 Seeding database...");
++
++  await db.delete(tasks);
++  await db.delete(nullifiers);
++  await db.delete(users);
++
++  const counts = await runSeed(db);
++  console.log(`✅ Seed complete — ${counts.users} users, ${counts.tasks} tasks inserted`);
+ 
+-  console.log("✅ Seed complete — 4 users, 5 tasks inserted");
+   await client.end();
+ }
+ 
+diff --git a/src/server/routers/auth.ts b/src/server/routers/auth.ts
+index 6ae4f32..942dce2 100644
+--- a/src/server/routers/auth.ts
++++ b/src/server/routers/auth.ts
+@@ -1,7 +1,10 @@
+ import { z } from "zod";
+ import { cookies } from "next/headers";
+-import { router, publicProcedure } from "@/lib/trpc/server";
++import { router, publicProcedure, protectedProcedure } from "@/lib/trpc/server";
+ import { TRPCError } from "@trpc/server";
++import { db } from "@/lib/db";
++import { users, tasks, nullifiers } from "@/server/db/schema";
++import { eq } from "drizzle-orm";
+ import { completeRegistration, HumanAlreadyRegisteredError } from "@/lib/core/auth-register";
+ import { SESSION_COOKIE_OPTIONS } from "@/lib/core/session";
+ 
+@@ -10,6 +13,36 @@ export const authRouter = router({
+     return ctx.session ?? null;
+   }),
+ 
++  profile: protectedProcedure.query(async ({ ctx }) => {
++    const user = await db.query.users.findFirst({
++      where: eq(users.nullifier, ctx.session.nullifier),
++    });
++    if (!user) {
++      throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
++    }
++    return {
++      id: user.id,
++      nullifier: user.nullifier,
++      role: user.role,
++      tasksCompleted: user.tasks_completed,
++      hbarBalance: user.hbar_balance,
++      hederaAccountId: user.hedera_account_id,
++    };
++  }),
++
++  // Demo operator reset — deletes all data so judges can re-register fresh.
++  // Admin key stays server-side only.
++  adminReset: publicProcedure.mutation(async () => {
++    const key = process.env.ADMIN_RESET_KEY;
++    if (!key) {
++      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "ADMIN_RESET_KEY not configured" });
++    }
++    await db.delete(nullifiers);
++    await db.delete(tasks);
++    await db.delete(users);
++    return { success: true, message: "Platform reset. Ready for next judge." };
++  }),
++
+   register: publicProcedure
+     .input(
+       z.object({

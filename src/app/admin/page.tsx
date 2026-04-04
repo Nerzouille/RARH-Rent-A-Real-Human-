@@ -12,30 +12,39 @@ type ResetResult = {
   timestamp: string;
 };
 
-async function callReset(seed: boolean): Promise<ResetResult> {
-  const url = seed ? "/api/admin/reset?seed=true" : "/api/admin/reset";
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "x-admin-key": process.env.NEXT_PUBLIC_ADMIN_RESET_KEY ?? "",
-    },
-  });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error ?? "Reset failed");
-  }
-  return res.json();
-}
-
 export default function AdminPage() {
   const [loading, setLoading] = useState<"reset" | "seed" | null>(null);
   const [lastResult, setLastResult] = useState<ResetResult | null>(null);
+  const [adminKey, setAdminKey] = useState("");
 
   async function handleReset(withSeed: boolean) {
+    if (!adminKey) {
+      toast.error("Please enter the admin reset key");
+      return;
+    }
+
+    const confirmMsg = withSeed
+      ? "Reset and seed the platform? This will delete ALL current data."
+      : "Reset the platform to a clean state? This will delete ALL current data.";
+
+    if (!window.confirm(confirmMsg)) return;
+
     const key = withSeed ? "seed" : "reset";
     setLoading(key);
     try {
-      const result = await callReset(withSeed);
+      const url = withSeed ? "/api/admin/reset?seed=true" : "/api/admin/reset";
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "x-admin-key": adminKey,
+        },
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Reset failed");
+      }
+      const result = (await res.json()) as ResetResult;
+
       setLastResult(result);
       toast.success(withSeed ? "Reset & seeded" : "Platform reset", {
         description: result.message,
@@ -132,6 +141,20 @@ export default function AdminPage() {
             className="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 underline underline-offset-4"
           >
             Judges Dashboard
+          </Link>
+          <Link
+            href="/tasks"
+            className="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 underline underline-offset-4"
+          >
+            Task List
+          </Link>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+          Judges Dashboard
           </Link>
           <Link
             href="/tasks"

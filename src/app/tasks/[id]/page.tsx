@@ -5,6 +5,7 @@ import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import { STATUS_COLORS } from "@/lib/constants";
 import { AuditTrail } from "@/components/AuditTrail";
+import { hashscanUrl } from "@/lib/core/hashscan";
 
 function getTaskActionError(
   action: "claim" | "markComplete" | "validate",

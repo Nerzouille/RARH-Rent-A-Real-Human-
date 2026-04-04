@@ -10,7 +10,7 @@ const PERSONAS = {
     nullifier: "judge-demo-kenji-worker",
     role: "worker" as const,
     redirect: "/tasks",
-    hbar_balance: 0,
+    hbar_balance: 50,
   },
   "sophie-client": {
     nullifier: "judge-demo-sophie-client",
@@ -69,53 +69,28 @@ async function switchToHuman(personaKey: HumanPersona) {
 }
 
 /**
- * Triggers an agent task creation via the MCP endpoint.
+ * Triggers an agent task creation by calling the internal tool directly.
+ * Avoids self-fetch deadlock and improves performance.
  */
-async function triggerAgent(req: NextRequest) {
+async function triggerAgent() {
   const agentWallet = PERSONAS["aria-agent"].wallet;
-  const origin = req.nextUrl.origin;
 
-  const mcpBody = {
-    jsonrpc: "2.0",
-    id: 1,
-    method: "tools/call",
-    params: {
-      name: "create_task",
-      arguments: {
-        title: "Demo: Translate landing page to French",
-        description:
-          "Translate the HumanProof landing page copy into French for the ETHGlobal Cannes demo.",
-        budget_hbar: 50,
-        deadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      },
-    },
+  const result = await runWithAgentRequestContext(agentWallet, () =>
+    createAgentTask({
+      agent_wallet: agentWallet,
+      title: "Demo: Translate landing page to French",
+      description:
+        "Translate the HumanProof landing page copy into French for the ETHGlobal Cannes demo.",
+      budget_hbar: 50,
+      deadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    })
+  );
+
+  return {
+    taskId: result.task_id,
+    escrowTxId: result.escrow_tx_id,
+    agentWallet,
   };
-
-  const mcpResponse = await fetch(`${origin}/api/mcp`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-agentkit-auth": `AgentKit ${agentWallet}`,
-    },
-    body: JSON.stringify(mcpBody),
-  });
-
-  const result = await mcpResponse.json();
-
-  let taskId: string | null = null;
-  let escrowTxId: string | null = null;
-  try {
-    const content = result?.result?.content?.[0]?.text;
-    if (content) {
-      const parsed = JSON.parse(content);
-      taskId = parsed?.taskId ?? null;
-      escrowTxId = parsed?.escrowTxId ?? null;
-    }
-  } catch {
-    // MCP response not parseable, leave taskId/escrowTxId null
-  }
-
-  return { taskId, escrowTxId, agentWallet };
 }
 
 export async function POST(req: NextRequest) {
@@ -133,6 +108,38 @@ export async function POST(req: NextRequest) {
   const persona = body.persona as PersonaKey | undefined;
 
   if (!persona || !(persona in PERSONAS)) {
+    return NextResponse.json(
+      { error: "Invalid persona. Use: kenji-worker, sophie-client, or aria-agent" },
+      { status: 400 }
+    );
+  }
+
+  if (isHumanPersona(persona)) {
+    const { token, redirect, user } = await switchToHuman(persona);
+
+    const response = NextResponse.json({
+      success: true,
+      persona,
+      redirect,
+      user: { id: user.id, nullifier: user.nullifier, role: user.role },
+    });
+    response.cookies.set("session", token, SESSION_COOKIE_OPTIONS);
+
+    return response;
+  }
+
+  // aria-agent
+  const { taskId, escrowTxId, agentWallet } = await triggerAgent();
+
+  return NextResponse.json({
+    success: true,
+    persona: "aria-agent",
+    agentWallet,
+    taskId,
+    escrowTxId,
+  });
+}
+S)) {
     return NextResponse.json(
       { error: "Invalid persona. Use: kenji-worker, sophie-client, or aria-agent" },
       { status: 400 }
