@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { trpc } from "@/lib/trpc/client";
 
-// 4 cols × 3 rows — 1 = blue square, 0 = empty
 const CHECKER: (0 | 1)[] = [1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1];
-
 const CREAM = "#f0ebe0";
 const BLUE  = "#2563eb";
 const BLUE_LIGHT = "#3b82f6";
@@ -33,7 +31,7 @@ export default function Home() {
         overflow: "hidden",
       }}
     >
-      {/* ── Orbe bleu — bas gauche, grand et intense ── */}
+      {/* Orbe bleu — bas gauche */}
       <div
         aria-hidden
         style={{
@@ -49,7 +47,7 @@ export default function Home() {
         }}
       />
 
-      {/* ── Barre info en haut ── */}
+      {/* Barre info */}
       <div style={{ position: "relative", zIndex: 1, flexShrink: 0, padding: "1.25rem 1.25rem 0" }}>
         <div
           style={{
@@ -68,12 +66,12 @@ export default function Home() {
             ETHGlobal Cannes · 2026
           </span>
           <span style={{ color: "#6b7280", fontSize: "0.875rem" }}>
-            humanproof.app
+            openhuman.app
           </span>
         </div>
       </div>
 
-      {/* ── Hero — occupe tout l'espace restant ── */}
+      {/* Hero */}
       <div
         style={{
           position: "relative",
@@ -85,14 +83,8 @@ export default function Home() {
           padding: "0 6vw",
         }}
       >
-        {/*
-          Bloc de texte.
-          L'astérisque est en position absolue à gauche de la ligne 2.
-          Le damier est en position absolue à droite de la ligne 2.
-        */}
         <div style={{ position: "relative" }}>
-
-          {/* ── Ligne 1 : "Rent a" ── */}
+          {/* Ligne 1 */}
           <div
             style={{
               fontSize: "clamp(3.5rem, 13.5vw, 15rem)",
@@ -103,18 +95,12 @@ export default function Home() {
               display: "block",
             }}
           >
-            Rent a
+            Open
           </div>
 
-          {/* ── Ligne 2 : [*] Human. [damier] ── */}
-          <div
-            style={{
-              position: "relative",
-              display: "inline-block",
-              marginTop: "-0.04em",
-            }}
-          >
-            {/* Astérisque — accroché à gauche, chevauchant les deux lignes */}
+          {/* Ligne 2 avec astérisque + damier */}
+          <div style={{ position: "relative", display: "inline-block", marginTop: "-0.04em" }}>
+            {/* Astérisque gauche */}
             <span
               aria-hidden
               style={{
@@ -134,7 +120,6 @@ export default function Home() {
               *
             </span>
 
-            {/* Texte ligne 2 */}
             <span
               style={{
                 fontSize: "clamp(3.5rem, 13.5vw, 15rem)",
@@ -148,7 +133,7 @@ export default function Home() {
               Human.
             </span>
 
-            {/* Damier — accroché à droite, centré sur la ligne 2 */}
+            {/* Damier droit */}
             <div
               aria-hidden
               style={{
@@ -176,16 +161,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* ── CTA discrets ── */}
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              gap: "1.25rem",
-              marginTop: "2.75rem",
-            }}
-          >
+          {/* CTAs */}
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "1.25rem", marginTop: "2.75rem" }}>
             <Link
               href="/register"
               style={{
@@ -197,15 +174,6 @@ export default function Home() {
                 fontFamily: "monospace",
                 letterSpacing: "0.18em",
                 textDecoration: "none",
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(37,99,235,0.12)";
-                (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(59,130,246,0.8)";
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
-                (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(37,99,235,0.6)";
               }}
             >
               PROVE HUMANITY →
@@ -218,10 +186,7 @@ export default function Home() {
                 fontFamily: "monospace",
                 letterSpacing: "0.18em",
                 textDecoration: "none",
-                transition: "color 0.15s",
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#d1d5db"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#6b7280"; }}
             >
               BROWSE BOUNTIES
             </Link>
@@ -229,7 +194,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── Barre du bas ── */}
+      {/* Barre bas */}
       <div
         style={{
           position: "relative",
@@ -241,11 +206,8 @@ export default function Home() {
           padding: "1rem 2rem",
         }}
       >
-        <span style={{ color: CREAM, fontSize: "0.875rem", fontWeight: 300 }}>HumanProof</span>
-        <span
-          style={{ color: "#374151", fontSize: "0.7rem", fontFamily: "monospace", letterSpacing: "0.12em" }}
-          className="hidden sm:block"
-        >
+        <span style={{ color: CREAM, fontSize: "0.875rem", fontWeight: 300 }}>Open Human</span>
+        <span style={{ color: "#374151", fontSize: "0.7rem", fontFamily: "monospace", letterSpacing: "0.12em" }} className="hidden sm:block">
           WORLD ID · HEDERA · MCP 2.0
         </span>
         <span style={{ color: "#6b7280", fontSize: "0.875rem" }}>ETH Global 2026</span>

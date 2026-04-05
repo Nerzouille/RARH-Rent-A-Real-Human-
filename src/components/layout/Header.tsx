@@ -33,7 +33,7 @@ export function Header() {
           className="font-mono font-bold tracking-tighter text-lg hover:opacity-80 transition-opacity shrink-0"
           style={{ color: "#60a5fa" }}
         >
-          RARH
+          OpenHuman
         </Link>
 
         {/* Nav */}

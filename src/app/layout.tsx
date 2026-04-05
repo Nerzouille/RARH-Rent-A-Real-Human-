@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HumanProof — Verified Human Marketplace",
+  title: "Open Human — Verified Human Marketplace",
   description: "The first marketplace where every worker is a cryptographically verified human.",
 };
 

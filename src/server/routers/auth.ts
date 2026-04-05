@@ -69,7 +69,25 @@ export const authRouter = router({
         return { user };
       } catch (err) {
         if (err instanceof HumanAlreadyRegisteredError) {
-          throw new TRPCError({ code: "CONFLICT", message: "HUMAN_ALREADY_REGISTERED" });
+          // Nullifier already registered — log the user back in instead of erroring.
+          // This handles the "returning user" case cleanly without a DB reset.
+          const { verifyWorldIDProof } = await import("@/lib/core/worldid");
+          const { nullifier } = await verifyWorldIDProof(input.idkit_response);
+          const existingUser = await db.query.users.findFirst({
+            where: eq(users.nullifier, nullifier),
+          });
+          if (!existingUser) {
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "User record missing" });
+          }
+          const { createSession } = await import("@/lib/core/session");
+          const token = await createSession({
+            nullifier: existingUser.nullifier,
+            role: existingUser.role,
+            userId: existingUser.id,
+          });
+          const cookieStore = await cookies();
+          cookieStore.set("session", token, SESSION_COOKIE_OPTIONS);
+          return { user: existingUser };
         }
         console.error("Registration error:", err);
         throw new TRPCError({
