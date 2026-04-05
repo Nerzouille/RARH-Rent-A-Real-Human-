@@ -16,7 +16,10 @@
     "db:seed": "tsx src/server/db/seed.ts",
     "db:reset": "docker compose down -v && docker compose up -d postgres && sleep 2 && drizzle-kit push && tsx src/server/db/seed.ts",
     "db:studio": "drizzle-kit studio",
-    "dev:full": "pnpm db:up && pnpm db:push && next dev --turbopack"
+    "dev:full": "pnpm db:up && pnpm db:push && next dev --turbopack",
+    "agent:demo": "tsx agent/index.ts",
+    "agent:watch": "tsx agent/index.ts --watch-only",
+    "agent:list": "tsx agent/index.ts --list"
   },
   "packageManager": "pnpm@10.33.0",
   "dependencies": {
